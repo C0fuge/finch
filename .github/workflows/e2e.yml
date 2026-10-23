@@ -47,7 +47,7 @@ jobs:
                 pip install -q adbc-driver-flightsql pyarrow pandas polars duckdb
                 python e2e/clients/python_df.py "${c#python_}" e2e/queries "$WORK/out/$c" ;;
               python_sqlalchemy)
-                pip install -q "sqlalchemy<2" flightsql-dbapi pyarrow pandas
+                pip install -q "sqlalchemy<2" flightsql-dbapi adbc-driver-flightsql pyarrow pandas
                 python e2e/clients/python_df.py sqlalchemy e2e/queries "$WORK/out/$c"
                 cat "$WORK/out/$c/reflection.txt" ;;
               *) echo "unknown client $c"; rc=1; continue ;;
