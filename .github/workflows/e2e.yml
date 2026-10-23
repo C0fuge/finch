@@ -1,0 +1,61 @@
+name: e2e
+on:
+  workflow_dispatch:
+    inputs:
+      clients:
+        description: "space-separated clients to run (python_adbc)"
+        default: "python_adbc"
+      result_mode:
+        description: "server result mode (partial|complete)"
+        default: "partial"
+  push:
+    branches: [main]
+    paths: ["e2e/**", ".github/workflows/e2e.yml"]
+concurrency: e2e
+jobs:
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CLIENTS: ${{ inputs.clients || 'python_adbc' }}
+      RESULT_MODE: ${{ inputs.result_mode || 'partial' }}
+      WORK: ${{ github.workspace }}/work
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download e2e-assets
+        run: |
+          mkdir -p "$WORK/assets"
+          gh release download e2e-assets --repo "$GITHUB_REPOSITORY" --dir "$WORK/assets"
+          ls -l "$WORK/assets"
+      - name: Start S3 and server
+        env: { ASSETS: "${{ github.workspace }}/work/assets" }
+        run: e2e/server.sh start
+      - name: Run clients
+        run: |
+          set -uo pipefail
+          . "$WORK/env.sh"
+          python3 -m venv "$WORK/venv"; . "$WORK/venv/bin/activate"
+          rc=0
+          for c in $CLIENTS; do
+            echo "::group::$c"
+            case "$c" in
+              python_adbc)
+                pip install -q adbc-driver-flightsql pyarrow
+                python e2e/clients/python_adbc.py e2e/queries "$WORK/out/$c" ;;
+              *) echo "unknown client $c"; rc=1; continue ;;
+            esac
+            python e2e/compare.py e2e/reference/sf1 "$WORK/out/$c" e2e/queries "$WORK/out/$c-summary.tsv" || rc=1
+            echo "::endgroup::"
+          done
+          exit $rc
+      - name: Stop
+        if: always()
+        run: e2e/server.sh stop
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-results
+          path: |
+            work/out
+            work/flight1.log
