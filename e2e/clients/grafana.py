@@ -58,7 +58,7 @@ def main():
         sql = open(os.path.join(QDIR, name + ".sql"), encoding="utf-8").read().strip().rstrip(";")
         try:
             res = call("/api/ds/query", {"from": "now-1h", "to": "now", "queries": [
-                {"refId": "A", "datasource": {"uid": ds["uid"], "type": ds["type"]}, "rawSql": sql, "format": "table",
+                {"refId": "A", "datasource": {"uid": ds["uid"], "type": ds["type"]}, "queryText": sql, "rawSql": sql, "rawQuery": True, "format": "table",
                  "maxDataPoints": 1000000}]})["results"]["A"]
             if res.get("error"):
                 raise RuntimeError(res["error"])
