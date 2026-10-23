@@ -38,6 +38,35 @@ def cell(v, typ):
     return str(v)
 
 
+def run(ds, sql):
+    res = call("/api/ds/query", {"from": "now-1h", "to": "now", "queries": [
+        {"refId": "A", "datasource": {"uid": ds["uid"], "type": ds["type"]}, "queryText": sql, "rawSql": sql, "rawQuery": True,
+         "format": "table", "maxDataPoints": 1000000}]})["results"]["A"]
+    if res.get("error"):
+        raise RuntimeError(res["error"])
+    rows = []
+    for fr in res.get("frames", []):
+        types = [f["type"] for f in fr["schema"]["fields"]]
+        cols = fr["data"]["values"]
+        rows += [[cell(c[i], t) for c, t in zip(cols, types)] for i in range(len(cols[0]) if cols else 0)]
+    return rows
+
+
+def wrap(ds, sql):
+    """The plugin returns empty columns for DECIMAL and DATE/TIMESTAMP (Arrow decimal128/date32 are not mapped):
+    cast those to DOUBLE / VARCHAR on the server side, using DESCRIBE to find them."""
+    exprs = []
+    for name, typ in [(r[0], r[1]) for r in run(ds, "describe " + sql)]:
+        q = '"' + name.replace('"', '""') + '"'
+        if typ.startswith("DECIMAL"):
+            exprs.append(f"cast({q} as double) as {q}")
+        elif typ.startswith(("DATE", "TIMESTAMP", "TIME")):
+            exprs.append(f"cast({q} as varchar) as {q}")
+        else:
+            exprs.append(q)
+    return "select " + ", ".join(exprs) + " from (" + sql + ") t"
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     for _ in range(60):
@@ -70,16 +99,7 @@ def main():
     for name in sorted(f[:-4] for f in os.listdir(QDIR) if f.endswith(".sql")):
         sql = open(os.path.join(QDIR, name + ".sql"), encoding="utf-8").read().strip().rstrip(";")
         try:
-            res = call("/api/ds/query", {"from": "now-1h", "to": "now", "queries": [
-                {"refId": "A", "datasource": {"uid": ds["uid"], "type": ds["type"]}, "queryText": sql, "rawSql": sql, "rawQuery": True, "format": "table",
-                 "maxDataPoints": 1000000}]})["results"]["A"]
-            if res.get("error"):
-                raise RuntimeError(res["error"])
-            rows = []
-            for fr in res.get("frames", []):
-                types = [f["type"] for f in fr["schema"]["fields"]]
-                cols = fr["data"]["values"]
-                rows += [[cell(c[i], t) for c, t in zip(cols, types)] for i in range(len(cols[0]) if cols else 0)]
+            rows = run(ds, wrap(ds, sql) if os.environ.get("GRAFANA_RAW") is None else sql)
             with open(os.path.join(OUT, name + ".tsv"), "w", encoding="utf-8") as f:
                 for r in rows:
                     f.write("\t".join(r) + "\n")
