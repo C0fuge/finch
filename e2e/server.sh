@@ -2,9 +2,9 @@
 # Start/stop S3 (rclone) + the Flight SQL server for client e2e jobs.
 #   ASSETS=<dir with e2e-assets files>  WORK=<scratch dir>  e2e/server.sh start|stop
 # Writes $WORK/env.sh (source it): FLIGHT_URI, FLIGHT_TOKEN. Throwaway credentials per run.
-# Optional: RESULT_MODE=partial|complete, SERVER_BUILD=int6b, SERVER_HEAP=2g.
+# Optional: RESULT_MODE=partial|complete, SERVER_BUILD=int7, SERVER_HEAP=2g.
 set -euo pipefail
-WORK="${WORK:?}"; NET=afe2e; SERVER_BUILD="${SERVER_BUILD:-int6b}"; RESULT_MODE="${RESULT_MODE:-partial}"
+WORK="${WORK:?}"; NET=afe2e; SERVER_BUILD="${SERVER_BUILD:-int7}"; RESULT_MODE="${RESULT_MODE:-partial}"
 SERVER_HEAP="${SERVER_HEAP:-2g}"; EXT=v1.4.5
 
 start() {

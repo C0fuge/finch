@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       clients:
-        description: "space-separated clients to run (python_adbc python_pandas python_polars python_duckdb)"
+        description: "space-separated clients to run (python_adbc python_pandas python_polars python_duckdb python_sqlalchemy)"
         default: "python_adbc"
       result_mode:
         description: "server result mode (partial|complete)"
@@ -46,6 +46,10 @@ jobs:
               python_pandas|python_polars|python_duckdb)
                 pip install -q adbc-driver-flightsql pyarrow pandas polars duckdb
                 python e2e/clients/python_df.py "${c#python_}" e2e/queries "$WORK/out/$c" ;;
+              python_sqlalchemy)
+                pip install -q "sqlalchemy<2" flightsql-dbapi pyarrow pandas
+                python e2e/clients/python_df.py sqlalchemy e2e/queries "$WORK/out/$c"
+                cat "$WORK/out/$c/reflection.txt" ;;
               *) echo "unknown client $c"; rc=1; continue ;;
             esac
             python e2e/compare.py e2e/reference/sf1 "$WORK/out/$c" e2e/queries "$WORK/out/$c-summary.tsv" || rc=1
