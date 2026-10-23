@@ -21,25 +21,22 @@
 
 CI uses server **int7** (default in `e2e/server.sh`).
 
-1. **DuckDB as a client**: community extension `airport` (Arrow Flight client for DuckDB): can it query a Flight SQL
-   server like ours (it targets "airport" servers — check)? If yes: e2e + docs; if not: record why in STATUS and
-   close.
-2. **Grafana**: the Flight SQL datasource plugin (`influxdata-flightsql-datasource`) against our server in CI
+1. **Grafana**: the Flight SQL datasource plugin (`influxdata-flightsql-datasource`) against our server in CI
    (Grafana container, provisioned datasource, query via the HTTP API `/api/ds/query`): results equal the reference
    for a few queries, token auth; docs.
-3. **ODBC** (Tableau / Power BI / Excel route): Apache Arrow Flight SQL ODBC driver (Dremio's / Arrow's) on Linux
+2. **ODBC** (Tableau / Power BI / Excel route): Apache Arrow Flight SQL ODBC driver (Dremio's / Arrow's) on Linux
    with unixODBC + `isql`/pyodbc: connect, metadata, TPC-H subset; docs (DSN example). If no Linux build is
    obtainable, record it and close.
-4. **ClickHouse**: recent ClickHouse has an Arrow Flight table function/engine — check whether it speaks Flight SQL
+3. **ClickHouse**: recent ClickHouse has an Arrow Flight table function/engine — check whether it speaks Flight SQL
    to an arbitrary server (ticket/command flow); if yes e2e + docs, else record and close.
-5. **Ceph RGW as the S3 backend**: run Ceph RGW in CI (e.g. `quay.io/ceph/demo` or a single-node `cephadm`-free
+4. **Ceph RGW as the S3 backend**: run Ceph RGW in CI (e.g. `quay.io/ceph/demo` or a single-node `cephadm`-free
    setup), load SF1, point the server's S3 plugin at it (path-style, region), TPC-H 22/22 via one client (JDBC or
    ADBC), check the server's S3 checksum/requireChecksums behaviour, list differences from MinIO.
-6. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
+5. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
    (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_TEST_BUCKET`): upload SF1 to a prefix, run the
    server against real S3 (virtual-hosted style, region, no custom endpoint), TPC-H 22/22, measure, delete the prefix.
    Until secrets exist: test the same code path against LocalStack and write the instructions in Open questions.
-7. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
+6. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
    notes, known limits, CI status.
 
 ## Open questions
@@ -66,3 +63,8 @@ CI uses server **int7** (default in `e2e/server.sh`).
   in complete mode (run 39983975369; full 5-client run 39983000136: polars/duckdb 22/22 on int7, sqlalchemy fixed after).
   Superset: SQLAlchemy URI `datafusion+flightsql://<host>:32010?insecure=true&token=<token>` (use `pip install flightsql-dbapi "sqlalchemy<2"`
   in the Superset image; Superset itself not run in CI — it only uses the dialect). `insecure=true` = plaintext gRPC (no TLS).
+- 2026-10-23 (cloud session 5): DuckDB `airport` extension — CLOSED, not usable. Probe `e2e/clients/duckdb_airport.py`
+  (workflow client `duckdb_airport`; run 40001980109): INSTALL/LOAD/CREATE SECRET/ATTACH succeed, but the first catalog
+  call fails: `list_schemas: Unrecognized request` — airport needs servers implementing its own Flight actions
+  (list_schemas etc.), not Flight SQL. Needs duckdb<2 (2.0 pulls airport from Query.Farm repo, run 40001545017).
+  DuckDB-as-client via ADBC (python_duckdb) remains the supported route.
