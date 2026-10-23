@@ -53,13 +53,15 @@ def run(ds, sql):
 
 
 def wrap(ds, sql):
-    """The plugin returns empty columns for DECIMAL and DATE/TIMESTAMP (Arrow decimal128/date32 are not mapped):
-    cast those to DOUBLE / VARCHAR on the server side, using DESCRIBE to find them."""
+    """The plugin returns empty columns for DECIMAL, HUGEINT and DATE/TIMESTAMP (Arrow decimal128/date32 are
+    not mapped): cast those to DOUBLE / BIGINT / VARCHAR on the server side, using DESCRIBE to find them."""
     exprs = []
     for name, typ in [(r[0], r[1]) for r in run(ds, "describe " + sql)]:
         q = '"' + name.replace('"', '""') + '"'
         if typ.startswith("DECIMAL"):
             exprs.append(f"cast({q} as double) as {q}")
+        elif typ in ("HUGEINT", "UHUGEINT"):
+            exprs.append(f"cast({q} as bigint) as {q}")
         elif typ.startswith(("DATE", "TIMESTAMP", "TIME")):
             exprs.append(f"cast({q} as varchar) as {q}")
         else:
