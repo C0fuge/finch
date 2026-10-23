@@ -42,6 +42,7 @@ jobs:
             case "$c" in
               python_adbc)
                 pip install -q adbc-driver-flightsql pyarrow
+                python e2e/clients/probe.py || true
                 python e2e/clients/python_adbc.py e2e/queries "$WORK/out/$c" ;;
               *) echo "unknown client $c"; rc=1; continue ;;
             esac
