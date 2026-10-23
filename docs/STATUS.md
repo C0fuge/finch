@@ -19,7 +19,13 @@
 
 ## Next steps (one per session; small and finished)
 
-1. **CI skeleton**: workflow `e2e.yml` (manual + on changes) that downloads `e2e-assets`, starts S3 (rclone) + server
+1. **Python ADBC to 22/22** (skeleton is in: `e2e.yml`, `e2e/server.sh`, `e2e/compare.py`, `e2e/clients/python_adbc.py`).
+   Run 39949263918: server+auth+ADBC work, q01 and q06 equal the reference, 20 fail (see Log). Fix the table-name
+   handling (try the schema as a qualifier vs. `USE`/catalog option; the server's SQL layer rejects some FROM
+   subqueries and q04 says `lineitem` does not exist — check which name form the server expects, see
+   `docs/` / the Trino plugin's SQL), error text is now one line per query in `work/out/*/*.err` (artifact
+   `e2e-results`). Then both result modes.
+   (done: CI skeleton; original text: workflow `e2e.yml` (manual + on changes) that downloads `e2e-assets`, starts S3 (rclone) + server
    with token auth, and runs per-client jobs selected by an input `clients=…`. Shared script `e2e/server.sh`
    (start/stop/wait) and `e2e/compare.py` (reference comparison).
 2. **Python**: ADBC Flight SQL driver (`adbc-driver-flightsql`) + pandas + polars (`pl.read_database` via ADBC) +
@@ -49,8 +55,13 @@
 
 ## Open questions
 
-(none yet)
+- Which table-name form does the server expect from generic clients (`tpch.lineitem`, or a session schema)? The
+  maintainer's Trino plugin uses schema `tpch`; ADBC with prefix `tpch.` failed on 20/22 queries.
 
 ## Log
 
 - 2026-10-23 (maintainer's local session): repo created; reference data and backlog added; assets uploaded.
+- 2026-10-23 (cloud session): CI skeleton added (workflow `e2e.yml`, `e2e/server.sh`, `e2e/compare.py`, ADBC client).
+  Run 39949263918 (~2 min): assets download, rclone S3, server with token auth and ADBC bearer auth all work;
+  2/22 OK (q01, q06 identical to the reference); others fail in Prepare (table-name / FROM-subquery restrictions).
+  Note: `gh api .../logs` is blocked by the proxy; use the MCP `get_job_logs` tool.

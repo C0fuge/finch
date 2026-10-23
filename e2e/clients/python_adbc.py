@@ -37,7 +37,7 @@ def main():
                     f.write("\t".join(cell(v) for v in r) + "\n")
         except Exception as e:  # noqa: BLE001
             with open(os.path.join(out, name + ".err"), "w", encoding="utf-8") as f:
-                f.write(str(e) + "\n")
+                f.write(" ".join(str(e).split()) + "\n")
     conn.close()
 
 
