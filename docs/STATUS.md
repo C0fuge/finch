@@ -21,25 +21,25 @@
 
 CI uses server **int7** (default in `e2e/server.sh`).
 
-1. **Grafana**: the Flight SQL datasource plugin (`influxdata-flightsql-datasource`) against our server in CI
-   (Grafana container, provisioned datasource, query via the HTTP API `/api/ds/query`): results equal the reference
-   for a few queries, token auth; docs.
-2. **ODBC** (Tableau / Power BI / Excel route): Apache Arrow Flight SQL ODBC driver (Dremio's / Arrow's) on Linux
+1. **ODBC** (Tableau / Power BI / Excel route): Apache Arrow Flight SQL ODBC driver (Dremio's / Arrow's) on Linux
    with unixODBC + `isql`/pyodbc: connect, metadata, TPC-H subset; docs (DSN example). If no Linux build is
    obtainable, record it and close.
-3. **ClickHouse**: recent ClickHouse has an Arrow Flight table function/engine — check whether it speaks Flight SQL
+2. **ClickHouse**: recent ClickHouse has an Arrow Flight table function/engine — check whether it speaks Flight SQL
    to an arbitrary server (ticket/command flow); if yes e2e + docs, else record and close.
-4. **Ceph RGW as the S3 backend**: run Ceph RGW in CI (e.g. `quay.io/ceph/demo` or a single-node `cephadm`-free
+3. **Ceph RGW as the S3 backend**: run Ceph RGW in CI (e.g. `quay.io/ceph/demo` or a single-node `cephadm`-free
    setup), load SF1, point the server's S3 plugin at it (path-style, region), TPC-H 22/22 via one client (JDBC or
    ADBC), check the server's S3 checksum/requireChecksums behaviour, list differences from MinIO.
-5. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
+4. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
    (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_TEST_BUCKET`): upload SF1 to a prefix, run the
    server against real S3 (virtual-hosted style, region, no custom endpoint), TPC-H 22/22, measure, delete the prefix.
    Until secrets exist: test the same code path against LocalStack and write the instructions in Open questions.
-6. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
+5. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
    notes, known limits, CI status.
 
 ## Open questions
+
+- Grafana plugin cannot read DECIMAL/DATE/HUGEINT columns (see docs/GRAFANA.md); the fix would be server-side
+  (e.g. an option to send decimals as double / dates as string) or a plugin change. Maintainer: worth a server option?
 
 - (answered) Table names: partial mode needs `schema.table` and accepts only single-table SELECTs (joins/most FROM-subqueries rejected: "Can only select from ONE table"); complete mode runs full DuckDB SQL, bare names allowed, but `tpch.` prefix also works. Joins in partial mode are expected to be done by the client engine (Trino). Maintainer: confirm that generic clients are meant to use `resultMode=complete` for arbitrary SQL.
 - (old) Which table-name form does the server expect from generic clients (`tpch.lineitem`, or a session schema)? The
@@ -68,3 +68,7 @@ CI uses server **int7** (default in `e2e/server.sh`).
   call fails: `list_schemas: Unrecognized request` — airport needs servers implementing its own Flight actions
   (list_schemas etc.), not Flight SQL. Needs duckdb<2 (2.0 pulls airport from Query.Farm repo, run 40001545017).
   DuckDB-as-client via ADBC (python_duckdb) remains the supported route.
+- 2026-10-23 (cloud session 6): Grafana done — `influxdata-flightsql-datasource` on Grafana 11.3.0, token auth: 22/22 identical
+  to reference (run 40027308243, ~3 min; workflow client `grafana`, `e2e/clients/grafana.py`, docs/GRAFANA.md). Plugin quirks:
+  query field is `queryText`; DECIMAL/DATE/HUGEINT columns arrive empty -> client casts via DESCRIBE (runs 40025836660 8/22 raw,
+  40026980329 21/22 before HUGEINT cast). Probe mode: workflow input `probe`.
