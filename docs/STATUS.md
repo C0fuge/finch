@@ -19,10 +19,8 @@
 
 ## Next steps (one per session; small and finished)
 
-1. **Python**: ADBC is done (22/22, complete mode); remaining: partial-mode handling for ADBC (multi-endpoint read; only single-table queries work there), then pandas + polars (`pl.read_database` via ADBC) +
-   DuckDB (ADBC scan) — TPC-H SF1 22/22 vs reference in both result modes; and the SQLAlchemy route for Superset
-   (`flightsql-dbapi` dialect or ADBC-based dialect): `SELECT` + `has_table`/`get_columns` reflection; document a
-   Superset connection string. Token auth.
+1. **Superset / SQLAlchemy**: dialect route (`flightsql-dbapi` or an ADBC-based dialect): `SELECT` +
+   `has_table`/`get_columns` reflection; document a Superset connection string. Token auth, `resultMode=complete`.
 2. **DuckDB as a client**: community extension `airport` (Arrow Flight client for DuckDB): can it query a Flight SQL
    server like ours (it targets "airport" servers — check)? If yes: e2e + docs; if not: record why in STATUS and
    close.
@@ -58,3 +56,7 @@
   2/22 OK (q01, q06 identical to the reference); others fail in Prepare (table-name / FROM-subquery restrictions).
   Note: `gh api .../logs` is blocked by the proxy; use the MCP `get_job_logs` tool.
 - 2026-10-23 (cloud session 2): ADBC 22/22 identical to reference with `result_mode=complete` (run 39951878169, ~2 min). Partial mode (run 39951727707): only q01/q06 (+simple subquery) work; server rejects multi-table queries by design. Probe script `e2e/clients/probe.py` kept (not in workflow).
+- 2026-10-23 (cloud session 3): pandas (`read_sql`), polars (`read_database`) and DuckDB (ADBC Arrow table scanned by DuckDB) via
+  `e2e/clients/python_df.py`: 22/22 identical to reference in complete mode (run 39976693143, all three, ~3 min).
+  Partial mode for these clients is not applicable: the server rejects multi-table SQL by design (see Open questions);
+  default push run 39976694757 (partial) fails accordingly — consider making the workflow default `complete`.

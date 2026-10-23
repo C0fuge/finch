@@ -7,7 +7,7 @@ on:
         default: "python_adbc"
       result_mode:
         description: "server result mode (partial|complete)"
-        default: "partial"
+        default: "complete"
   push:
     branches: [main]
     paths: ["e2e/**", ".github/workflows/e2e.yml"]
@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 30
     env:
       CLIENTS: ${{ inputs.clients || 'python_adbc' }}
-      RESULT_MODE: ${{ inputs.result_mode || 'partial' }}
+      RESULT_MODE: ${{ inputs.result_mode || 'complete' }}
       WORK: ${{ github.workspace }}/work
       GH_TOKEN: ${{ github.token }}
     steps:
