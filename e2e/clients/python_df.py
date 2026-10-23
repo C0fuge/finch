@@ -45,6 +45,7 @@ def fetch(kind, conn, sql):
 
 def sqlalchemy_main(qdir, out):
     """Superset route: SQLAlchemy 1.4 + flightsql-dbapi dialect (datafusion+flightsql://), token auth."""
+    import flightsql.sqlalchemy  # noqa: F401  (registers datafusion+flightsql)
     from sqlalchemy import create_engine, inspect, text
     host, port = os.environ["FLIGHT_URI"].split("//")[1].split(":")
     engine = create_engine(f"datafusion+flightsql://{host}:{port}?insecure=true&token={os.environ['FLIGHT_TOKEN']}")
