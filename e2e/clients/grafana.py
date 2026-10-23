@@ -54,6 +54,19 @@ def main():
     })["datasource"]
     print("datasource uid", ds["uid"])
     print("health:", call(f"/api/datasources/uid/{ds['uid']}/health"))
+    if os.environ.get("GRAFANA_PROBE"):
+        for sql in ["select 1 as i, 'a' as s", "select cast(1.5 as double) as d", "select cast(1.5 as decimal(15,2)) as d",
+                    "select cast(1.5 as decimal(38,2)) as d", "select date '1998-01-02' as d",
+                    "select count(*) from tpch.lineitem", "select sum(l_quantity) from tpch.lineitem",
+                    "select l_orderkey, l_shipdate from tpch.lineitem limit 2"]:
+            try:
+                r = call("/api/ds/query", {"from": "now-1h", "to": "now", "queries": [
+                    {"refId": "A", "datasource": {"uid": ds["uid"], "type": ds["type"]}, "queryText": sql, "rawQuery": True,
+                     "format": "table"}]})["results"]["A"]
+                print("PROBE ok ", sql, json.dumps(r.get("frames", r))[:300], flush=True)
+            except Exception as e:  # noqa: BLE001
+                print("PROBE ERR", sql, str(e)[:200], flush=True)
+        return
     for name in sorted(f[:-4] for f in os.listdir(QDIR) if f.endswith(".sql")):
         sql = open(os.path.join(QDIR, name + ".sql"), encoding="utf-8").read().strip().rstrip(";")
         try:
