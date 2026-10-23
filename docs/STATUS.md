@@ -19,43 +19,35 @@
 
 ## Next steps (one per session; small and finished)
 
-1. **Python ADBC to 22/22** (skeleton is in: `e2e.yml`, `e2e/server.sh`, `e2e/compare.py`, `e2e/clients/python_adbc.py`).
-   Run 39949263918: server+auth+ADBC work, q01 and q06 equal the reference, 20 fail (see Log). Fix the table-name
-   handling (try the schema as a qualifier vs. `USE`/catalog option; the server's SQL layer rejects some FROM
-   subqueries and q04 says `lineitem` does not exist — check which name form the server expects, see
-   `docs/` / the Trino plugin's SQL), error text is now one line per query in `work/out/*/*.err` (artifact
-   `e2e-results`). Then both result modes.
-   (done: CI skeleton; original text: workflow `e2e.yml` (manual + on changes) that downloads `e2e-assets`, starts S3 (rclone) + server
-   with token auth, and runs per-client jobs selected by an input `clients=…`. Shared script `e2e/server.sh`
-   (start/stop/wait) and `e2e/compare.py` (reference comparison).
-2. **Python**: ADBC Flight SQL driver (`adbc-driver-flightsql`) + pandas + polars (`pl.read_database` via ADBC) +
+1. **Python**: ADBC is done (22/22, complete mode); remaining: partial-mode handling for ADBC (multi-endpoint read; only single-table queries work there), then pandas + polars (`pl.read_database` via ADBC) +
    DuckDB (ADBC scan) — TPC-H SF1 22/22 vs reference in both result modes; and the SQLAlchemy route for Superset
    (`flightsql-dbapi` dialect or ADBC-based dialect): `SELECT` + `has_table`/`get_columns` reflection; document a
    Superset connection string. Token auth.
-3. **DuckDB as a client**: community extension `airport` (Arrow Flight client for DuckDB): can it query a Flight SQL
+2. **DuckDB as a client**: community extension `airport` (Arrow Flight client for DuckDB): can it query a Flight SQL
    server like ours (it targets "airport" servers — check)? If yes: e2e + docs; if not: record why in STATUS and
    close.
-4. **Grafana**: the Flight SQL datasource plugin (`influxdata-flightsql-datasource`) against our server in CI
+3. **Grafana**: the Flight SQL datasource plugin (`influxdata-flightsql-datasource`) against our server in CI
    (Grafana container, provisioned datasource, query via the HTTP API `/api/ds/query`): results equal the reference
    for a few queries, token auth; docs.
-5. **ODBC** (Tableau / Power BI / Excel route): Apache Arrow Flight SQL ODBC driver (Dremio's / Arrow's) on Linux
+4. **ODBC** (Tableau / Power BI / Excel route): Apache Arrow Flight SQL ODBC driver (Dremio's / Arrow's) on Linux
    with unixODBC + `isql`/pyodbc: connect, metadata, TPC-H subset; docs (DSN example). If no Linux build is
    obtainable, record it and close.
-6. **ClickHouse**: recent ClickHouse has an Arrow Flight table function/engine — check whether it speaks Flight SQL
+5. **ClickHouse**: recent ClickHouse has an Arrow Flight table function/engine — check whether it speaks Flight SQL
    to an arbitrary server (ticket/command flow); if yes e2e + docs, else record and close.
-7. **Ceph RGW as the S3 backend**: run Ceph RGW in CI (e.g. `quay.io/ceph/demo` or a single-node `cephadm`-free
+6. **Ceph RGW as the S3 backend**: run Ceph RGW in CI (e.g. `quay.io/ceph/demo` or a single-node `cephadm`-free
    setup), load SF1, point the server's S3 plugin at it (path-style, region), TPC-H 22/22 via one client (JDBC or
    ADBC), check the server's S3 checksum/requireChecksums behaviour, list differences from MinIO.
-8. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
+7. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
    (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_TEST_BUCKET`): upload SF1 to a prefix, run the
    server against real S3 (virtual-hosted style, region, no custom endpoint), TPC-H 22/22, measure, delete the prefix.
    Until secrets exist: test the same code path against LocalStack and write the instructions in Open questions.
-9. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
+8. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
    notes, known limits, CI status.
 
 ## Open questions
 
-- Which table-name form does the server expect from generic clients (`tpch.lineitem`, or a session schema)? The
+- (answered) Table names: partial mode needs `schema.table` and accepts only single-table SELECTs (joins/most FROM-subqueries rejected: "Can only select from ONE table"); complete mode runs full DuckDB SQL, bare names allowed, but `tpch.` prefix also works. Joins in partial mode are expected to be done by the client engine (Trino). Maintainer: confirm that generic clients are meant to use `resultMode=complete` for arbitrary SQL.
+- (old) Which table-name form does the server expect from generic clients (`tpch.lineitem`, or a session schema)? The
   maintainer's Trino plugin uses schema `tpch`; ADBC with prefix `tpch.` failed on 20/22 queries.
 
 ## Log
@@ -65,3 +57,4 @@
   Run 39949263918 (~2 min): assets download, rclone S3, server with token auth and ADBC bearer auth all work;
   2/22 OK (q01, q06 identical to the reference); others fail in Prepare (table-name / FROM-subquery restrictions).
   Note: `gh api .../logs` is blocked by the proxy; use the MCP `get_job_logs` tool.
+- 2026-10-23 (cloud session 2): ADBC 22/22 identical to reference with `result_mode=complete` (run 39951878169, ~2 min). Partial mode (run 39951727707): only q01/q06 (+simple subquery) work; server rejects multi-table queries by design. Probe script `e2e/clients/probe.py` kept (not in workflow).
