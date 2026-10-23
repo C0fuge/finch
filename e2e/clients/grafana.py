@@ -71,6 +71,7 @@ def main():
                 for r in rows:
                     f.write("\t".join(r) + "\n")
         except Exception as e:  # noqa: BLE001
+            print(name, "ERROR", " ".join(str(e).split())[:600], flush=True)
             with open(os.path.join(OUT, name + ".err"), "w", encoding="utf-8") as f:
                 f.write(" ".join(str(e).split()) + "\n")
 
