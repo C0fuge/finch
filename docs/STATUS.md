@@ -19,29 +19,27 @@
 
 ## Next steps (one per session; small and finished)
 
-> **Use server int7** (2026-10-23, local coordinator): `arrow-flight-server-1.0.0-int7.jar` sha256 2b9595ab…06fa + `int7-plugins.tar.zst` sha256 4d2416f4…1af4 (plugins s3/lakefs/iceberg/hive + START-NOTES.txt) = int6b + all stand fixes (lakeFS: JOIN commit mixing, complete-mode lag, tags; Iceberg: file:/s3a roots, LocalFileSystem, Gravitino errors; Hive: HDFS paths with space/%, out-of-root partitions hidden, metastore fail-fast, UNAVAILABLE on outage; Iceberg equality deletes read all columns — correct, slow). Replace int6/int6b in CI with int7; rerun the full suite once.
+CI uses server **int7** (default in `e2e/server.sh`).
 
-1. **Superset / SQLAlchemy**: dialect route (`flightsql-dbapi` or an ADBC-based dialect): `SELECT` +
-   `has_table`/`get_columns` reflection; document a Superset connection string. Token auth, `resultMode=complete`.
-2. **DuckDB as a client**: community extension `airport` (Arrow Flight client for DuckDB): can it query a Flight SQL
+1. **DuckDB as a client**: community extension `airport` (Arrow Flight client for DuckDB): can it query a Flight SQL
    server like ours (it targets "airport" servers — check)? If yes: e2e + docs; if not: record why in STATUS and
    close.
-3. **Grafana**: the Flight SQL datasource plugin (`influxdata-flightsql-datasource`) against our server in CI
+2. **Grafana**: the Flight SQL datasource plugin (`influxdata-flightsql-datasource`) against our server in CI
    (Grafana container, provisioned datasource, query via the HTTP API `/api/ds/query`): results equal the reference
    for a few queries, token auth; docs.
-4. **ODBC** (Tableau / Power BI / Excel route): Apache Arrow Flight SQL ODBC driver (Dremio's / Arrow's) on Linux
+3. **ODBC** (Tableau / Power BI / Excel route): Apache Arrow Flight SQL ODBC driver (Dremio's / Arrow's) on Linux
    with unixODBC + `isql`/pyodbc: connect, metadata, TPC-H subset; docs (DSN example). If no Linux build is
    obtainable, record it and close.
-5. **ClickHouse**: recent ClickHouse has an Arrow Flight table function/engine — check whether it speaks Flight SQL
+4. **ClickHouse**: recent ClickHouse has an Arrow Flight table function/engine — check whether it speaks Flight SQL
    to an arbitrary server (ticket/command flow); if yes e2e + docs, else record and close.
-6. **Ceph RGW as the S3 backend**: run Ceph RGW in CI (e.g. `quay.io/ceph/demo` or a single-node `cephadm`-free
+5. **Ceph RGW as the S3 backend**: run Ceph RGW in CI (e.g. `quay.io/ceph/demo` or a single-node `cephadm`-free
    setup), load SF1, point the server's S3 plugin at it (path-style, region), TPC-H 22/22 via one client (JDBC or
    ADBC), check the server's S3 checksum/requireChecksums behaviour, list differences from MinIO.
-7. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
+6. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
    (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_TEST_BUCKET`): upload SF1 to a prefix, run the
    server against real S3 (virtual-hosted style, region, no custom endpoint), TPC-H 22/22, measure, delete the prefix.
    Until secrets exist: test the same code path against LocalStack and write the instructions in Open questions.
-8. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
+7. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
    notes, known limits, CI status.
 
 ## Open questions
@@ -62,3 +60,9 @@
   `e2e/clients/python_df.py`: 22/22 identical to reference in complete mode (run 39976693143, all three, ~3 min).
   Partial mode for these clients is not applicable: the server rejects multi-table SQL by design (see Open questions);
   default push run 39976694757 (partial) fails accordingly — consider making the workflow default `complete`.
+- 2026-10-23 (cloud session 4): CI switched to server int7. Superset route = SQLAlchemy 1.4 + `flightsql-dbapi` dialect
+  (`datafusion+flightsql://host:32010?insecure=true&token=<token>`; `import flightsql.sqlalchemy` registers it;
+  needs `sqlalchemy<2`): TPC-H 22/22 identical to reference, reflection works (schemas, tables, has_table, get_columns)
+  in complete mode (run 39983975369; full 5-client run 39983000136: polars/duckdb 22/22 on int7, sqlalchemy fixed after).
+  Superset: SQLAlchemy URI `datafusion+flightsql://<host>:32010?insecure=true&token=<token>` (use `pip install flightsql-dbapi "sqlalchemy<2"`
+  in the Superset image; Superset itself not run in CI — it only uses the dialect). `insecure=true` = plaintext gRPC (no TLS).
