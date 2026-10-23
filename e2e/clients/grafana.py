@@ -10,6 +10,7 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.request
 
 URL, FLIGHT, QDIR, OUT = sys.argv[1:5]
@@ -19,8 +20,11 @@ AUTH = "Basic " + base64.b64encode(b"admin:admin").decode()
 def call(path, body=None, method=None):
     req = urllib.request.Request(URL + path, data=None if body is None else json.dumps(body).encode(), method=method,
                                  headers={"Authorization": AUTH, "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=300) as r:
-        return json.load(r)
+    try:
+        with urllib.request.urlopen(req, timeout=300) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"HTTP {e.code}: {e.read().decode()[:500]}") from None
 
 
 def cell(v, typ):
