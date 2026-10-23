@@ -46,5 +46,5 @@ start() {
   printf 'export FLIGHT_URI=grpc://localhost:32010\nexport FLIGHT_TOKEN=%s\n' "$token" > "$WORK/env.sh"
   echo "127.0.0.1 flight1" | sudo tee -a /etc/hosts >/dev/null
 }
-stop() { docker logs flight1 > "$WORK/flight1.log" 2>&1 || true; docker rm -f flight1 s3 >/dev/null 2>&1 || true; }
+stop() { docker logs flight1 > "$WORK/flight1.log" 2>&1 || true; docker rm -f grafana flight1 s3 >/dev/null 2>&1 || true; }
 "${1:?start|stop}"

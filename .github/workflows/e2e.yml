@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       clients:
-        description: "space-separated clients to run (python_adbc python_pandas python_polars python_duckdb python_sqlalchemy)"
+        description: "space-separated clients to run (python_adbc python_pandas python_polars python_duckdb python_sqlalchemy grafana)"
         default: "python_adbc"
       result_mode:
         description: "server result mode (partial|complete)"
@@ -50,6 +50,11 @@ jobs:
                 pip install -q "sqlalchemy<2" flightsql-dbapi adbc-driver-flightsql pyarrow pandas
                 python e2e/clients/python_df.py sqlalchemy e2e/queries "$WORK/out/$c"
                 cat "$WORK/out/$c/reflection.txt" ;;
+              grafana)
+                docker run -d --name grafana --network afe2e -p 127.0.0.1:3000:3000 \
+                  -e GF_INSTALL_PLUGINS=influxdata-flightsql-datasource grafana/grafana-oss:11.3.0 >/dev/null
+                python e2e/clients/grafana.py http://localhost:3000 flight1:32010 e2e/queries "$WORK/out/$c" \
+                  || { docker logs grafana 2>&1 | tail -40; rc=1; } ;;
               duckdb_airport)
                 pip install -q "duckdb<2"
                 python e2e/clients/duckdb_airport.py; continue ;;
