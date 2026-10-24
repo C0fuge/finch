@@ -19,9 +19,9 @@ A recurring cloud session works here with zero context each time.
 
 ## Rules
 
-- Private repo. Release `e2e-assets` holds the maintainer's server build: never make the repo public, never copy
-  the assets elsewhere.
-- Actions minutes are limited (~2000/month shared): short jobs, cache images/deps, run e2e only when needed.
+- The repo is **public** (since 2026-10-24, maintainer's decision: free Actions minutes). Never commit secrets,
+  credentials or personal data; everything pushed is visible.
+- Actions minutes are free now (public repo); still keep jobs short and cached.
 - Be token-economical: prefer small, finished steps; don't re-read large files needlessly; stop early when
   waiting on CI longer than ~20 min (leave it for the next session).
 - No secrets/credentials in the repo; test credentials generated in the job. Cloud credentials (AWS) only via
