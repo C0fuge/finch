@@ -21,24 +21,19 @@
 
 CI uses server **int7** (default in `e2e/server.sh`).
 
-1. **ODBC** (Tableau / Power BI / Excel route): Apache Arrow Flight SQL ODBC driver (Dremio's / Arrow's) on Linux
-   with unixODBC + `isql`/pyodbc: connect, metadata, TPC-H subset; docs (DSN example). If no Linux build is
-   obtainable, record it and close.
-2. **ClickHouse**: recent ClickHouse has an Arrow Flight table function/engine — check whether it speaks Flight SQL
+1. **ClickHouse**: recent ClickHouse has an Arrow Flight table function/engine — check whether it speaks Flight SQL
    to an arbitrary server (ticket/command flow); if yes e2e + docs, else record and close.
-3. **Ceph RGW as the S3 backend**: run Ceph RGW in CI (e.g. `quay.io/ceph/demo` or a single-node `cephadm`-free
+2. **Ceph RGW as the S3 backend**: run Ceph RGW in CI (e.g. `quay.io/ceph/demo` or a single-node `cephadm`-free
    setup), load SF1, point the server's S3 plugin at it (path-style, region), TPC-H 22/22 via one client (JDBC or
    ADBC), check the server's S3 checksum/requireChecksums behaviour, list differences from MinIO.
-4. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
+3. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
    (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_TEST_BUCKET`): upload SF1 to a prefix, run the
    server against real S3 (virtual-hosted style, region, no custom endpoint), TPC-H 22/22, measure, delete the prefix.
    Until secrets exist: test the same code path against LocalStack and write the instructions in Open questions.
-5. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
+4. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
    notes, known limits, CI status.
 
 ## Open questions
-
-- Actions runs 40043746927 and 40057271491 (trivial probes) failed in 2-3 s with no steps/logs. Maintainer: please check Actions minutes/billing and the repo Actions settings; all CI work is blocked.
 
 - Grafana plugin cannot read DECIMAL/DATE/HUGEINT columns (see docs/GRAFANA.md); the fix would be server-side
   (e.g. an option to send decimals as double / dates as string) or a plugin change. Maintainer: worth a server option?
@@ -83,3 +78,4 @@ CI uses server **int7** (default in `e2e/server.sh`).
 - 2026-10-24 (cloud session 8): re-dispatched odbc-probe: run 40057271491 failed again in 2 s, 0 steps (job 120762904425). Actions appears blocked repo-wide (billing/minutes?). No progress possible until maintainer fixes it; ODBC stays Next step 1.
 - 2026-10-24 (cloud session 9): odbc-probe re-dispatched once more: run 40069230804 failed in 2 s, 0 steps (job 120798864842). Actions still blocked repo-wide; no work possible. Maintainer action needed (see Open questions).
 - 2026-10-24 (cloud session 10): odbc-probe dispatched again: run 40080956299 failed instantly (0 steps). Actions still blocked repo-wide; stopped. Maintainer action needed. Suggest not re-dispatching until the maintainer confirms the fix.
+- 2026-10-24 (cloud session 11): Actions works again (public repo). ODBC DONE: Dremio Arrow Flight SQL ODBC RPM + unixODBC + pyodbc, metadata OK, TPC-H 22/22 identical (complete mode), run 40121536029 (probe 40121216354); client `odbc` in e2e.yml, docs/ODBC.md. Note: dispatched e2e runs queue behind the push run (concurrency group).
