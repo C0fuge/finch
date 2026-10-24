@@ -38,7 +38,7 @@ CI uses server **int7** (default in `e2e/server.sh`).
 
 ## Open questions
 
-- Actions run 40043746927 (a trivial probe) failed in 3 s with no steps/logs. Maintainer: please check Actions minutes/billing and the repo's Actions settings.
+- Actions runs 40043746927 and 40057271491 (trivial probes) failed in 2-3 s with no steps/logs. Maintainer: please check Actions minutes/billing and the repo Actions settings; all CI work is blocked.
 
 - Grafana plugin cannot read DECIMAL/DATE/HUGEINT columns (see docs/GRAFANA.md); the fix would be server-side
   (e.g. an option to send decimals as double / dates as string) or a plugin change. Maintainer: worth a server option?
@@ -80,3 +80,4 @@ CI uses server **int7** (default in `e2e/server.sh`).
   `useEncryption=false` needed for plaintext). Run 40043746927 failed in 3 s with no steps and no logs (job 120720560632) —
   looks like an Actions-side problem (minutes/billing exhausted?), not the YAML. Next session: re-dispatch the probe once;
   if it runs, read its output and continue ODBC (rpm2cpio + unixODBC + pyodbc, DSN example in docs).
+- 2026-10-24 (cloud session 8): re-dispatched odbc-probe: run 40057271491 failed again in 2 s, 0 steps (job 120762904425). Actions appears blocked repo-wide (billing/minutes?). No progress possible until maintainer fixes it; ODBC stays Next step 1.
