@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       clients:
-        description: "space-separated clients to run (python_adbc python_pandas python_polars python_duckdb python_sqlalchemy grafana)"
+        description: "space-separated clients to run (python_adbc python_pandas python_polars python_duckdb python_sqlalchemy grafana odbc)"
         default: "python_adbc"
       probe:
-        description: "grafana: run type probes instead of TPC-H (any non-empty value)"
+        description: "grafana/odbc: run probes instead of TPC-H (any non-empty value)"
         default: ""
       result_mode:
         description: "server result mode (partial|complete)"
@@ -60,6 +60,18 @@ jobs:
                 GRAFANA_PROBE=${GRAFANA_PROBE:-} python e2e/clients/grafana.py http://localhost:3000 flight1:32010 e2e/queries "$WORK/out/$c" \
                   || rc=1
                 docker logs grafana 2>&1 | grep -iE 'panic|error|decimal|unsupported' | cut -c1-300 | sort | uniq -c | sort -rn | head -15 ;;
+              odbc)
+                sudo apt-get install -qq -y unixodbc rpm2cpio cpio >/dev/null
+                mkdir -p "$WORK/odbc" && curl -sSL -o "$WORK/odbc/d.rpm" \
+                  https://download.dremio.com/arrow-flight-sql-odbc-driver/arrow-flight-sql-odbc-driver-LATEST.x86_64.rpm
+                (cd "$WORK/odbc" && rpm2cpio d.rpm | cpio -idm 2>/dev/null)
+                lib=$(ls "$WORK"/odbc/opt/arrow-flight-sql-odbc-driver/lib64/libarrow-odbc.so* | head -1)
+                ldd "$lib" | grep -i 'not found' || true
+                printf '[Arrow Flight SQL ODBC Driver]\nDriver=%s\n' "$lib" > "$WORK/odbc/odbcinst.ini"
+                export ODBCSYSINI="$WORK/odbc" ODBCINSTINI=odbcinst.ini
+                pip install -q pyodbc
+                ODBC_PROBE=${GRAFANA_PROBE:-} python e2e/clients/odbc.py e2e/queries "$WORK/out/$c" \
+                  || { rc=1; continue; } ;;
               duckdb_airport)
                 pip install -q "duckdb<2"
                 python e2e/clients/duckdb_airport.py; continue ;;
