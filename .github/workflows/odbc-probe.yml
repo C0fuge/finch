@@ -1,0 +1,23 @@
+name: odbc-probe
+on:
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Look for a Linux Arrow Flight SQL ODBC driver
+        run: |
+          for u in \
+            https://download.dremio.com/arrow-flight-sql-odbc-driver/ \
+            https://download.dremio.com/arrow-flight-sql-odbc-driver/arrow-flight-sql-odbc-LATEST.x86_64.rpm \
+            https://www.dremio.com/drivers/ \
+            https://docs.dremio.com/software/drivers/arrow-flight-sql-odbc-driver/ \
+            https://github.com/apache/arrow-flight-sql-odbc/releases \
+            https://api.github.com/repos/apache/arrow-flight-sql-odbc/releases \
+            https://api.github.com/repos/apache/arrow/releases/latest ; do
+            echo "== $u"; curl -sSL -m 30 -o /tmp/o -w '%{http_code} %{size_download}\n' "$u" || true
+            grep -oiE '[a-z0-9_./:-]*(odbc)[a-z0-9_./-]*\.(rpm|deb|tar\.gz|so[0-9.]*|zip|msi)' /tmp/o | sort -u | head -15
+          done
+          echo "== apt"; sudo apt-get update -qq; apt-cache search -n odbc | grep -iE 'flight|arrow' || echo none
+          echo "== pip"; pip download --no-deps -d /tmp/p arrow-odbc 2>&1 | tail -1 || true
