@@ -19,8 +19,11 @@ A recurring cloud session works here with zero context each time.
 
 ## Rules
 
-- The repo is **public** (since 2026-10-24, maintainer's decision: free Actions minutes). Never commit secrets,
-  credentials or personal data; everything pushed is visible.
+- The repo is **public** (since 2026-10-24, maintainer's decision: free Actions minutes). Everything pushed —
+  code, docs, releases, CI logs — is visible to anyone: never commit secrets, credentials or personal data (names,
+  e-mail addresses, home paths, host names of the maintainer's machines or of production systems). Local commits use
+  `C0fuge <189659128+C0fuge@users.noreply.github.com>`. Keep the repo low-profile: no description, topics or website,
+  no links to it from other projects.
 - Actions minutes are free now (public repo); still keep jobs short and cached.
 - Be token-economical: prefer small, finished steps; don't re-read large files needlessly; stop early when
   waiting on CI longer than ~20 min (leave it for the next session).
