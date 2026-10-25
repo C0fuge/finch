@@ -11,6 +11,9 @@ on:
       s3_backend:
         description: "S3 backend (rclone|ceph)"
         default: "rclone"
+      server_build:
+        description: "server build (int7|4eaab052deaf)"
+        default: "int7"
       result_mode:
         description: "server result mode (partial|complete)"
         default: "complete"
@@ -25,6 +28,7 @@ jobs:
     env:
       CLIENTS: ${{ inputs.clients || 'python_adbc' }}
       RESULT_MODE: ${{ inputs.result_mode || 'complete' }}
+      SERVER_BUILD: ${{ inputs.server_build || 'int7' }}
       S3_BACKEND: ${{ inputs.s3_backend || 'rclone' }}
       WORK: ${{ github.workspace }}/work
       GH_TOKEN: ${{ github.token }}

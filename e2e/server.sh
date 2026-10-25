@@ -2,7 +2,7 @@
 # Start/stop S3 (rclone) + the Flight SQL server for client e2e jobs.
 #   ASSETS=<dir with e2e-assets files>  WORK=<scratch dir>  e2e/server.sh start|stop
 # Writes $WORK/env.sh (source it): FLIGHT_URI, FLIGHT_TOKEN. Throwaway credentials per run.
-# Optional: S3_BACKEND=rclone(default)|ceph (Ceph RGW from quay.io/ceph/demo, CEPH_IMAGE), RESULT_MODE=partial|complete, SERVER_BUILD=int7, SERVER_HEAP=2g.
+# Optional: S3_BACKEND=rclone(default)|ceph (Ceph RGW from quay.io/ceph/demo, CEPH_IMAGE), RESULT_MODE=partial|complete, SERVER_BUILD=int7|4eaab052deaf, SERVER_HEAP=2g.
 set -euo pipefail
 WORK="${WORK:?}"; NET=afe2e; SERVER_BUILD="${SERVER_BUILD:-int7}"; RESULT_MODE="${RESULT_MODE:-partial}"
 SERVER_HEAP="${SERVER_HEAP:-2g}"; EXT=v1.4.5
@@ -10,9 +10,15 @@ SERVER_HEAP="${SERVER_HEAP:-2g}"; EXT=v1.4.5
 start() {
   ASSETS="${ASSETS:?}"
   mkdir -p "$WORK/server" "$WORK/data" "$WORK/flight" "$WORK/duckdb/extensions/$EXT/linux_amd64"
-  cp "$ASSETS/arrow-flight-server-1.0.0-$SERVER_BUILD.jar" "$WORK/server/server.jar"
-  tar --zstd -xf "$ASSETS/$SERVER_BUILD-plugins.tar.zst" -C "$WORK/server"
-  tar --zstd -xf "$ASSETS/flight-server-libs.tar.zst" -C "$WORK/server"
+  if [ "$SERVER_BUILD" = int7 ] || [ "$SERVER_BUILD" = int6b ]; then
+    cp "$ASSETS/arrow-flight-server-1.0.0-$SERVER_BUILD.jar" "$WORK/server/server.jar"
+    tar --zstd -xf "$ASSETS/$SERVER_BUILD-plugins.tar.zst" -C "$WORK/server"
+    tar --zstd -xf "$ASSETS/flight-server-libs.tar.zst" -C "$WORK/server"
+  else  # newer builds: <hash>, own plugins/libs archives
+    cp "$ASSETS/arrow-flight-server-1.0.0-$SERVER_BUILD-linux.jar" "$WORK/server/server.jar"
+    tar --zstd -xf "$ASSETS/flight-plugins-1.0.0-$SERVER_BUILD.tar.zst" -C "$WORK/server"
+    tar --zstd -xf "$ASSETS/flight-server-libs-1.0.0-$SERVER_BUILD.tar.zst" -C "$WORK/server"
+  fi
   mkdir -p "$WORK/server/libs"
   tar --zstd -xf "$ASSETS/test-data-sf1-types.tar.zst" -C "$WORK/data"
   curl -fsSL "http://extensions.duckdb.org/$EXT/linux_amd64/httpfs.duckdb_extension.gz" | gunzip \
