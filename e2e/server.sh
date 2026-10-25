@@ -4,7 +4,7 @@
 # Writes $WORK/env.sh (source it): FLIGHT_URI, FLIGHT_TOKEN. Throwaway credentials per run.
 # Optional: S3_BACKEND=rclone(default)|ceph (Ceph RGW from quay.io/ceph/demo, CEPH_IMAGE), RESULT_MODE=partial|complete, SERVER_BUILD=int7|4eaab052deaf, SERVER_HEAP=2g.
 set -euo pipefail
-WORK="${WORK:?}"; NET=afe2e; SERVER_BUILD="${SERVER_BUILD:-int7}"; RESULT_MODE="${RESULT_MODE:-partial}"
+WORK="${WORK:?}"; NET=afe2e; SERVER_BUILD="${SERVER_BUILD:-4eaab052deaf}"; RESULT_MODE="${RESULT_MODE:-partial}"
 SERVER_HEAP="${SERVER_HEAP:-2g}"; EXT=v1.4.5
 
 start() {
