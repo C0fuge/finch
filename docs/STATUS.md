@@ -19,6 +19,8 @@
 
 ## Next steps (one per session; small and finished)
 
+> **New server build `server-1.0.0-4eaab052deaf`** (2026-10-25, local coordinator; built by the server repo CI from main 4eaab05 = int7 + hadoopfs timeout defaults 3 s / 10 s + dependency security upgrades (Jackson 2.21, Netty 4.2.19, Parquet codecs, Hive libthrift, upstream-sync items) + a fresh, much smaller runtime libs set): assets `arrow-flight-server-1.0.0-4eaab052deaf-linux.jar`, `flight-plugins-1.0.0-4eaab052deaf.tar.zst`, `flight-server-libs-1.0.0-4eaab052deaf.tar.zst` (replaces flight-server-libs.tar.zst for this build), START-NOTES.md (sums in SHA256SUMS). Not stand-verified yet: run your full suite once against it (keep int7 as the fallback default until it is green); report regressions under Open questions.
+
 CI uses server **int7** (default in `e2e/server.sh`).
 
 1. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
