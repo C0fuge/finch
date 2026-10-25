@@ -19,6 +19,14 @@
 
 ## Next steps (one per session; small and finished)
 
+> **New server build `server-1.0.0-20b887839edf`** (2026-10-26, local coordinator; jar, plugins tar, libs tar + merged
+> `SHA256SUMS` attached to this repo's assets release). = c3b276054cc3 + **Iceberg time travel** (`FOR VERSION AS OF` /
+> `FOR TIMESTAMP AS OF`; c3b276054cc3 did **not** contain it — that earlier note was wrong, which is why the forwarded
+> clause was rejected) + fix for parameterized prepared statements with `duckDbStatementCacheSize` 0/1 + Hive metastore
+> Kerberos client + local catalog roots under a non-local `fs.defaultFS`. Run the suite once on it, retry the
+> time-travel item, and make it the CI default if green. Server bugs → the server repo's Next steps via the coordinator.
+
+
 CI uses server build **c3b276054cc3** (default in `e2e/server.sh`; verified 2026-10-25; 4eaab052deaf and int7 stay selectable via `server_build`). Open follow-up (additive, no approval needed): forward Iceberg time travel (`FOR VERSION/TIMESTAMP AS OF`) from the Trino connector / StarRocks to the server.
 
 1. **AWS S3 with real credentials**: code is ready (`S3_BACKEND=aws`, workflow input `s3_backend=aws`); waits for the
