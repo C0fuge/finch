@@ -21,16 +21,14 @@
 
 CI uses server **int7** (default in `e2e/server.sh`).
 
-1. **ClickHouse**: recent ClickHouse has an Arrow Flight table function/engine — check whether it speaks Flight SQL
-   to an arbitrary server (ticket/command flow); if yes e2e + docs, else record and close.
-2. **Ceph RGW as the S3 backend**: run Ceph RGW in CI (e.g. `quay.io/ceph/demo` or a single-node `cephadm`-free
+1. **Ceph RGW as the S3 backend**: run Ceph RGW in CI (e.g. `quay.io/ceph/demo` or a single-node `cephadm`-free
    setup), load SF1, point the server's S3 plugin at it (path-style, region), TPC-H 22/22 via one client (JDBC or
    ADBC), check the server's S3 checksum/requireChecksums behaviour, list differences from MinIO.
-3. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
+2. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
    (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_TEST_BUCKET`): upload SF1 to a prefix, run the
    server against real S3 (virtual-hosted style, region, no custom endpoint), TPC-H 22/22, measure, delete the prefix.
    Until secrets exist: test the same code path against LocalStack and write the instructions in Open questions.
-4. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
+3. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
    notes, known limits, CI status.
 
 ## Open questions
@@ -79,3 +77,4 @@ CI uses server **int7** (default in `e2e/server.sh`).
 - 2026-10-24 (cloud session 9): odbc-probe re-dispatched once more: run 40069230804 failed in 2 s, 0 steps (job 120798864842). Actions still blocked repo-wide; no work possible. Maintainer action needed (see Open questions).
 - 2026-10-24 (cloud session 10): odbc-probe dispatched again: run 40080956299 failed instantly (0 steps). Actions still blocked repo-wide; stopped. Maintainer action needed. Suggest not re-dispatching until the maintainer confirms the fix.
 - 2026-10-24 (cloud session 11): Actions works again (public repo). ODBC DONE: Dremio Arrow Flight SQL ODBC RPM + unixODBC + pyodbc, metadata OK, TPC-H 22/22 identical (complete mode), run 40121536029 (probe 40121216354); client `odbc` in e2e.yml, docs/ODBC.md. Note: dispatched e2e runs queue behind the push run (concurrency group).
+- 2026-10-25 (cloud session 12): ClickHouse — CLOSED, not usable as a client. Probe `clickhouse_probe` in e2e.yml (ClickHouse 26.10.2, `arrowFlight(host:port, dataset[, user, password])`; runs 40145771326, 40145923406, 40146081497). Without credentials: `ARROWFLIGHT_FETCH_SCHEMA_ERROR ... Unauthenticated` (it does not send a Bearer token; only user/password); with `user` + token as password it authenticates but the server answers `Internal` on its schema fetch. The function addresses a plain Flight dataset (descriptor/ticket by name), no SQL statements, so Flight SQL commands are never issued — the server's Flight SQL path does not apply (descriptor type is inferred from this, not captured). ClickHouse as a *server* is out of scope. Probe kept (dispatch only).
