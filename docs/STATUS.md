@@ -24,8 +24,6 @@ CI uses server build **4eaab052deaf** (default in `e2e/server.sh`; verified 2026
 1. **AWS S3 with real credentials**: code is ready (`S3_BACKEND=aws`, workflow input `s3_backend=aws`); waits for the
    maintainer's secrets (see Open questions). Once they exist: dispatch `e2e.yml` with `s3_backend=aws`, check TPC-H
    22/22 and timing, record in the Log.
-2. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
-   notes, known limits, CI status.
 
 ## Open questions
 
@@ -83,3 +81,4 @@ CI uses server build **4eaab052deaf** (default in `e2e/server.sh`; verified 2026
 
 - 2026-10-25 (cloud session 14): new server build 4eaab052deaf verified: all clients (adbc, pandas, polars, duckdb, sqlalchemy, grafana, odbc; complete mode) green in one run 40179620497 (~4 min); made it the CI default (int7 selectable). No regressions. AWS S3 item not started (dispatch note: `gh api` needs `-f 'inputs[name]=value'`).
 - 2026-10-25 (cloud session 15): AWS S3 backend prepared in `e2e/server.sh` (`S3_BACKEND=aws`: vhost style, region, no endpoint, rclone upload to `finch-ci-<run id>`, purge on stop; fails early without secrets) and `localstack` backend (localstack 3.8.1, path-style only — vhost not testable there). LocalStack ADBC run 40192230933 green (TPC-H 22/22 identical). Real AWS run pending secrets.
+- 2026-10-25 (cloud session 16): AWS run dispatched to test for secrets: run 40205838839 failed in ~1 min (fails early; secrets presumably still missing, cause not read from logs). Wrote `docs/CLIENTS.md` (table of all clients; Next step 2 done). Next step 1 still waits on secrets.
