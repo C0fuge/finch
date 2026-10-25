@@ -83,6 +83,7 @@ jobs:
                   docker run --rm --network afe2e clickhouse/clickhouse-server:latest clickhouse-local -q "$q" 2>&1 \
                     | sed "s/$FLIGHT_TOKEN/***/g" | cut -c1-600 | head -20 || true
                 done
+                docker logs flight1 2>&1 | grep -iE 'exception|error|unsupported|descriptor' | cut -c1-400 | tail -15
                 continue ;;
               duckdb_airport)
                 pip install -q "duckdb<2"
