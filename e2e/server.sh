@@ -2,7 +2,7 @@
 # Start/stop S3 (rclone) + the Flight SQL server for client e2e jobs.
 #   ASSETS=<dir with e2e-assets files>  WORK=<scratch dir>  e2e/server.sh start|stop
 # Writes $WORK/env.sh (source it): FLIGHT_URI, FLIGHT_TOKEN. Throwaway credentials per run.
-# Optional: RESULT_MODE=partial|complete, SERVER_BUILD=int7, SERVER_HEAP=2g.
+# Optional: S3_BACKEND=rclone(default)|ceph (Ceph RGW from quay.io/ceph/demo, CEPH_IMAGE), RESULT_MODE=partial|complete, SERVER_BUILD=int7, SERVER_HEAP=2g.
 set -euo pipefail
 WORK="${WORK:?}"; NET=afe2e; SERVER_BUILD="${SERVER_BUILD:-int7}"; RESULT_MODE="${RESULT_MODE:-partial}"
 SERVER_HEAP="${SERVER_HEAP:-2g}"; EXT=v1.4.5
@@ -23,15 +23,33 @@ start() {
   mv "$(dirname "$(find "$WORK/data" -type d -name lineitem -print -quit)")" "$WORK/s3/lake/parquet/tpch"
   local types; types="$(find "$WORK/data" -maxdepth 2 -type d -name types -print -quit)"
   [ -z "$types" ] || mv "$types" "$WORK/s3/lake/parquet/types"
-  docker network create $NET >/dev/null 2>&1 || true
-  docker run -d --name s3 --network $NET -v "$WORK/s3":/data rclone/rclone:1.68.2 \
-    serve s3 /data --addr :9000 --auth-key "$s3key,$s3secret" >/dev/null
+  S3_BACKEND="${S3_BACKEND:-rclone}"; local s3ep=http://s3:9000
+  if [ "$S3_BACKEND" = ceph ]; then
+    docker network create --subnet 172.30.0.0/24 $NET >/dev/null 2>&1 || true
+    docker run -d --name s3 --network $NET --ip 172.30.0.10 -e MON_IP=172.30.0.10 -e CEPH_PUBLIC_NETWORK=172.30.0.0/24 \
+      -e DEMO_DAEMONS="mon,mgr,osd,rgw" -e CEPH_DEMO_UID=ci -e CEPH_DEMO_ACCESS_KEY="$s3key" \
+      -e CEPH_DEMO_SECRET_KEY="$s3secret" -e CEPH_DEMO_BUCKET=lake -e RGW_FRONTEND_PORT=8080 \
+      "${CEPH_IMAGE:-quay.io/ceph/demo:latest-squid}" >/dev/null
+    for _ in $(seq 1 90); do
+      curl -s -o /dev/null http://172.30.0.10:8080/ && break; sleep 3
+    done
+    docker logs s3 2>&1 | tail -15
+    s3ep=http://s3:8080
+    # load data: rclone copy into the bucket (provider Ceph, path-style)
+    docker run --rm --network $NET -v "$WORK/s3":/data -e RCLONE_CONFIG_C_TYPE=s3 -e RCLONE_CONFIG_C_PROVIDER=Ceph \
+      -e RCLONE_CONFIG_C_ENDPOINT=$s3ep -e RCLONE_CONFIG_C_ACCESS_KEY_ID="$s3key" -e RCLONE_CONFIG_C_SECRET_ACCESS_KEY="$s3secret" \
+      rclone/rclone:1.68.2 copy /data/lake C:lake --transfers 16 --s3-no-check-bucket
+  else
+    docker network create $NET >/dev/null 2>&1 || true
+    docker run -d --name s3 --network $NET -v "$WORK/s3":/data rclone/rclone:1.68.2 \
+      serve s3 /data --addr :9000 --auth-key "$s3key,$s3secret" >/dev/null
+  fi
   docker run -d --name flight1 --network $NET -p 127.0.0.1:32010:32010 \
     -v "$WORK/server":/app:ro -v "$WORK/duckdb":/ext/duckdb-home:ro -v "$WORK/flight":/work -w /work \
     -e LANG=C.UTF-8 -e FLIGHT_S3_ACCESS_KEY="$s3key" -e FLIGHT_S3_SECRET_KEY="$s3secret" \
     -e FLIGHT_AUTH_PROVIDER=token -e FLIGHT_AUTH_TOKEN="$token" eclipse-temurin:21-jdk \
     java -Xmx"$SERVER_HEAP" --add-opens=java.base/java.nio=ALL-UNNAMED -Darrow.enable_unsafe_memory_access=true \
-      -DdataDir=s3://lake/parquet -Ds3Endpoint=http://s3:9000 -Ds3UrlStyle=path -Ds3Region=us-east-1 \
+      -DdataDir=s3://lake/parquet -Ds3Endpoint=$s3ep -Ds3UrlStyle=path -Ds3Region=us-east-1 \
       -Darrowflight.plugins.dir=/app/plugins -Darrowflight.duckdb.extensionDir=/ext/duckdb-home/extensions \
       -DresultMode="$RESULT_MODE" -cp "/app/server.jar:/app/libs/*" \
       pro.surpin.data.arrowflight.server.HadoopArrowFlightServer --port 32010 --localhost flight1 --hosts flight1 >/dev/null

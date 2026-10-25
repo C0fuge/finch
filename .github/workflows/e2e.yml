@@ -8,6 +8,9 @@ on:
       probe:
         description: "grafana/odbc: run probes instead of TPC-H (any non-empty value)"
         default: ""
+      s3_backend:
+        description: "S3 backend (rclone|ceph)"
+        default: "rclone"
       result_mode:
         description: "server result mode (partial|complete)"
         default: "complete"
@@ -22,6 +25,7 @@ jobs:
     env:
       CLIENTS: ${{ inputs.clients || 'python_adbc' }}
       RESULT_MODE: ${{ inputs.result_mode || 'complete' }}
+      S3_BACKEND: ${{ inputs.s3_backend || 'rclone' }}
       WORK: ${{ github.workspace }}/work
       GH_TOKEN: ${{ github.token }}
       GRAFANA_PROBE: ${{ inputs.probe || '' }}
