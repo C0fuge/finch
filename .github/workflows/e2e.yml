@@ -72,6 +72,18 @@ jobs:
                 pip install -q pyodbc
                 ODBC_PROBE=${GRAFANA_PROBE:-} python e2e/clients/odbc.py e2e/queries "$WORK/out/$c" \
                   || { rc=1; continue; } ;;
+              clickhouse_probe)
+                . "$WORK/env.sh"
+                docker pull -q clickhouse/clickhouse-server:latest >/dev/null
+                docker run --rm clickhouse/clickhouse-server:latest clickhouse-local --version
+                for q in "SELECT * FROM arrowFlight('flight1:32010', 'tpch.region')" \
+                         "SELECT * FROM arrowFlight('flight1:32010', 'SELECT * FROM tpch.region')" \
+                         "SELECT * FROM arrowFlight('flight1:32010', 'tpch.region', 'user', '$FLIGHT_TOKEN')"; do
+                  echo "--- ${q//$FLIGHT_TOKEN/***}"
+                  docker run --rm --network afe2e clickhouse/clickhouse-server:latest clickhouse-local -q "$q" 2>&1 \
+                    | sed "s/$FLIGHT_TOKEN/***/g" | cut -c1-600 | head -20
+                done
+                continue ;;
               duckdb_airport)
                 pip install -q "duckdb<2"
                 python e2e/clients/duckdb_airport.py; continue ;;
