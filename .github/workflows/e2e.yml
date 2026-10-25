@@ -81,7 +81,7 @@ jobs:
                          "SELECT * FROM arrowFlight('flight1:32010', 'tpch.region', 'user', '$FLIGHT_TOKEN')"; do
                   echo "--- ${q//$FLIGHT_TOKEN/***}"
                   docker run --rm --network afe2e clickhouse/clickhouse-server:latest clickhouse-local -q "$q" 2>&1 \
-                    | sed "s/$FLIGHT_TOKEN/***/g" | cut -c1-600 | head -20
+                    | sed "s/$FLIGHT_TOKEN/***/g" | cut -c1-600 | head -20 || true
                 done
                 continue ;;
               duckdb_airport)
