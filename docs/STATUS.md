@@ -21,14 +21,18 @@
 
 CI uses server build **4eaab052deaf** (default in `e2e/server.sh`; verified 2026-10-25, int7 stays selectable via `server_build`).
 
-1. **AWS S3 as the S3 backend**: prepare a workflow that runs only when the maintainer adds secrets
-   (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_TEST_BUCKET`): upload SF1 to a prefix, run the
-   server against real S3 (virtual-hosted style, region, no custom endpoint), TPC-H 22/22, measure, delete the prefix.
-   Until secrets exist: test the same code path against LocalStack and write the instructions in Open questions.
+1. **AWS S3 with real credentials**: code is ready (`S3_BACKEND=aws`, workflow input `s3_backend=aws`); waits for the
+   maintainer's secrets (see Open questions). Once they exist: dispatch `e2e.yml` with `s3_backend=aws`, check TPC-H
+   22/22 and timing, record in the Log.
 2. **Docs**: `docs/CLIENTS.md` — one section per client: install, connection string / config, auth, result-mode
    notes, known limits, CI status.
 
 ## Open questions
+
+- AWS S3 test: please add repo secrets `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_TEST_BUCKET`
+  (an IAM user limited to that bucket: s3:ListBucket/GetObject/PutObject/DeleteObject). The run uploads SF1 to prefix
+  `finch-ci-<run id>/parquet`, uses virtual-hosted style without endpoint, and purges the prefix at the end.
+  Untested assumption: the server's `-Ds3UrlStyle=vhost` with no `-Ds3Endpoint` selects AWS endpoint resolution.
 
 - Grafana plugin cannot read DECIMAL/DATE/HUGEINT columns (see docs/GRAFANA.md); the fix would be server-side
   (e.g. an option to send decimals as double / dates as string) or a plugin change. Maintainer: worth a server option?
@@ -78,3 +82,4 @@ CI uses server build **4eaab052deaf** (default in `e2e/server.sh`; verified 2026
 - 2026-10-25 (cloud session 13): Ceph RGW DONE as S3 backend: `S3_BACKEND=ceph` in `e2e/server.sh` (workflow input `s3_backend`; `quay.io/ceph/demo:latest-squid`, fixed net 172.30.0.0/24, RGW :8080, user/bucket created via CEPH_DEMO_* env, SF1 loaded with rclone provider=Ceph; server uses path-style, region us-east-1, no config changes). ADBC TPC-H 22/22 identical to reference (run 40157283045; Ceph start+load ~75 s, whole job ~2 min). Differences vs rclone/MinIO: none observed in the server; only setup cost. Not examined: requireChecksums behaviour (no failure seen with defaults).
 
 - 2026-10-25 (cloud session 14): new server build 4eaab052deaf verified: all clients (adbc, pandas, polars, duckdb, sqlalchemy, grafana, odbc; complete mode) green in one run 40179620497 (~4 min); made it the CI default (int7 selectable). No regressions. AWS S3 item not started (dispatch note: `gh api` needs `-f 'inputs[name]=value'`).
+- 2026-10-25 (cloud session 15): AWS S3 backend prepared in `e2e/server.sh` (`S3_BACKEND=aws`: vhost style, region, no endpoint, rclone upload to `finch-ci-<run id>`, purge on stop; fails early without secrets) and `localstack` backend (localstack 3.8.1, path-style only — vhost not testable there). LocalStack ADBC run 40192230933 green (TPC-H 22/22 identical). Real AWS run pending secrets.
