@@ -13,7 +13,7 @@ on:
         default: "rclone"
       server_build:
         description: "server build (60e888bc26ec|20b887839edf|c3b276054cc3|4eaab052deaf|int7)"
-        default: "20b887839edf"
+        default: "60e888bc26ec"
       result_mode:
         description: "server result mode (partial|complete)"
         default: "complete"
