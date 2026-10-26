@@ -19,6 +19,12 @@
 
 ## Next steps (one per session; small and finished)
 
+> **New server build `server-1.0.0-4d707e2aedfc`** (2026-10-26, local coordinator; jar, plugins tar, libs tar + merged
+> `SHA256SUMS` in this repo's assets release) = 7fbe2d75827c + DuckDB retries S3 connect errors for ~6 s (the stand saw
+> every complete-mode query fail with "Could not establish connection" on S3 at `duckDbThreads=8`). Run the suite once
+> on it and make it the CI default if green.
+
+
 > **New server build `server-1.0.0-7fbe2d75827c`** (2026-10-26, local coordinator; jar, plugins tar, libs tar + merged
 > `SHA256SUMS` in this repo's assets release) = 60e888bc26ec + planning no longer waits for the cluster to settle after
 > a node left (fixes the intermittent GetFlightInfo TIMED_OUT with a stopped member) + `s3a://`/`s3n://` catalog roots +
