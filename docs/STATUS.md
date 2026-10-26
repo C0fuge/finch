@@ -19,13 +19,7 @@
 
 ## Next steps (one per session; small and finished)
 
-> **New server build `server-1.0.0-57d252b1437f`** (2026-10-26, local coordinator; jar, plugins tar, libs tar + merged
-> `SHA256SUMS` in this repo's assets release) = 4d707e2aedfc + one outbound byte budget shared by all Flight streams
-> (the stand saw CANCELLED streams and a dead node under 8 concurrent partial-mode scans on a 3-node cluster). Run the
-> suite once on it (failover and concurrent-scan items especially) and make it the CI default if green.
-
-
-CI uses server build **4d707e2aedfc** (= 7fbe2d75827c + S3 connect retry ~6 s; 7fbe2d75827c = 60e888bc26ec + planning with a node down + s3a/s3n roots; default in `e2e/server.sh` and `e2e.yml`; verified 2026-10-26; 60e888bc26ec, 20b887839edf, c3b276054cc3, 4eaab052deaf and int7 stay selectable via `server_build`; includes Iceberg time travel `FOR VERSION/TIMESTAMP AS OF`). Open follow-up (additive, no approval needed): forward Iceberg time travel (`FOR VERSION/TIMESTAMP AS OF`) from the Trino connector / StarRocks to the server.
+CI uses server build **57d252b1437f** (= 4d707e2aedfc + one outbound byte budget shared by all Flight streams; 4d707e2aedfc = 7fbe2d75827c + S3 connect retry ~6 s; 7fbe2d75827c = 60e888bc26ec + planning with a node down + s3a/s3n roots; default in `e2e/server.sh` and `e2e.yml`; verified 2026-10-26; 4d707e2aedfc, 60e888bc26ec, 20b887839edf, c3b276054cc3, 4eaab052deaf and int7 stay selectable via `server_build`; includes Iceberg time travel `FOR VERSION/TIMESTAMP AS OF`). Open follow-up (additive, no approval needed): forward Iceberg time travel (`FOR VERSION/TIMESTAMP AS OF`) from the Trino connector / StarRocks to the server.
 
 1. **AWS S3 with real credentials**: code is ready (`S3_BACKEND=aws`, workflow input `s3_backend=aws`); waits for the
    maintainer's secrets (see Open questions). Once they exist: dispatch `e2e.yml` with `s3_backend=aws`, check TPC-H
@@ -92,3 +86,4 @@ CI uses server build **4d707e2aedfc** (= 7fbe2d75827c + S3 connect retry ~6 s; 7
 - 2026-10-26 (cloud session 18): server build 20b887839edf verified: all 7 clients (adbc, pandas, polars, duckdb, sqlalchemy, grafana, odbc; complete mode) green in run 40248211118; made it the CI default. Iceberg time travel not exercised: this repo has no Trino/StarRocks/Iceberg client job yet (the forwarding follow-up lives in the server/connector side); candidate future item: an Iceberg time-travel e2e via ADBC. AWS item still waits on secrets.
 - 2026-10-26 (cloud session 19): server build 60e888bc26ec (duckDbThreads default 4) verified: all 7 clients (adbc, pandas, polars, duckdb, sqlalchemy, grafana, odbc; complete mode) green in run 40262843972 (~4m20s, same as before: no noticeable timing change at SF1 in CI); made it the CI default. AWS item still waits on secrets.
 - 2026-10-26 (cloud session 20): server build 4d707e2aedfc (includes 7fbe2d75827c changes) verified: all 7 clients (complete mode) green in run 40297959260; made it the CI default (7fbe2d75827c was not run separately). AWS item still waits on secrets.
+- 2026-10-26 (cloud session 21): server build 57d252b1437f (shared outbound byte budget) verified: all 7 clients (complete mode) green in run 40320927620; made it the CI default. Failover/concurrent-partial-scan checks need a multi-node cluster and are not covered by this repo's single-node CI. AWS item still waits on secrets.

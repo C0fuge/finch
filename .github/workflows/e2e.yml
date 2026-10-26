@@ -12,8 +12,8 @@ on:
         description: "S3 backend (rclone|ceph|localstack|aws; aws needs repo secrets AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_TEST_BUCKET)"
         default: "rclone"
       server_build:
-        description: "server build (4d707e2aedfc|60e888bc26ec|20b887839edf|c3b276054cc3|4eaab052deaf|int7)"
-        default: "4d707e2aedfc"
+        description: "server build (57d252b1437f|4d707e2aedfc|60e888bc26ec|20b887839edf|c3b276054cc3|4eaab052deaf|int7)"
+        default: "57d252b1437f"
       result_mode:
         description: "server result mode (partial|complete)"
         default: "complete"
@@ -28,7 +28,7 @@ jobs:
     env:
       CLIENTS: ${{ inputs.clients || 'python_adbc' }}
       RESULT_MODE: ${{ inputs.result_mode || 'complete' }}
-      SERVER_BUILD: ${{ inputs.server_build || '4d707e2aedfc' }}
+      SERVER_BUILD: ${{ inputs.server_build || '57d252b1437f' }}
       S3_BACKEND: ${{ inputs.s3_backend || 'rclone' }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
