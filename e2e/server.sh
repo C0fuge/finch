@@ -2,9 +2,9 @@
 # Start/stop S3 (rclone) + the Flight SQL server for client e2e jobs.
 #   ASSETS=<dir with e2e-assets files>  WORK=<scratch dir>  e2e/server.sh start|stop
 # Writes $WORK/env.sh (source it): FLIGHT_URI, FLIGHT_TOKEN. Throwaway credentials per run.
-# Optional: S3_BACKEND=rclone(default)|ceph (Ceph RGW from quay.io/ceph/demo, CEPH_IMAGE)|localstack (pinned 3.8.1, path-style)|aws (real S3: needs AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_TEST_BUCKET; vhost-style, no endpoint; data under prefix finch-ci-<run id>, purged on stop), RESULT_MODE=partial|complete, SERVER_BUILD=int7|4eaab052deaf|c3b276054cc3|20b887839edf|60e888bc26ec, SERVER_HEAP=2g.
+# Optional: S3_BACKEND=rclone(default)|ceph (Ceph RGW from quay.io/ceph/demo, CEPH_IMAGE)|localstack (pinned 3.8.1, path-style)|aws (real S3: needs AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_TEST_BUCKET; vhost-style, no endpoint; data under prefix finch-ci-<run id>, purged on stop), RESULT_MODE=partial|complete, SERVER_BUILD=int7|4eaab052deaf|c3b276054cc3|20b887839edf|60e888bc26ec|4d707e2aedfc, SERVER_HEAP=2g.
 set -euo pipefail
-WORK="${WORK:?}"; NET=afe2e; SERVER_BUILD="${SERVER_BUILD:-60e888bc26ec}"; RESULT_MODE="${RESULT_MODE:-partial}"
+WORK="${WORK:?}"; NET=afe2e; SERVER_BUILD="${SERVER_BUILD:-4d707e2aedfc}"; RESULT_MODE="${RESULT_MODE:-partial}"
 SERVER_HEAP="${SERVER_HEAP:-2g}"; EXT=v1.4.5
 
 start() {
