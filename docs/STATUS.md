@@ -19,13 +19,7 @@
 
 ## Next steps (one per session; small and finished)
 
-> **New server build `server-1.0.0-60e888bc26ec`** (2026-10-26, local coordinator; jar, plugins tar, libs tar + merged
-> `SHA256SUMS` in this repo's assets release) = 20b887839edf + **`duckDbThreads` default 4** (was 1 in code; maintainer
-> decision after the perf campaign: SF10 ~1.8x, SF1 ~1.3x faster, small queries unchanged). No protocol change. Run the
-> suite once on it and make it the CI default if green; note timings if they change noticeably.
-
-
-CI uses server build **20b887839edf** (default in `e2e/server.sh` and `e2e.yml`; verified 2026-10-26; c3b276054cc3, 4eaab052deaf and int7 stay selectable via `server_build`; includes Iceberg time travel `FOR VERSION/TIMESTAMP AS OF`). Open follow-up (additive, no approval needed): forward Iceberg time travel (`FOR VERSION/TIMESTAMP AS OF`) from the Trino connector / StarRocks to the server.
+CI uses server build **60e888bc26ec** (= 20b887839edf + `duckDbThreads` default 4; default in `e2e/server.sh` and `e2e.yml`; verified 2026-10-26; 20b887839edf, c3b276054cc3, 4eaab052deaf and int7 stay selectable via `server_build`; includes Iceberg time travel `FOR VERSION/TIMESTAMP AS OF`). Open follow-up (additive, no approval needed): forward Iceberg time travel (`FOR VERSION/TIMESTAMP AS OF`) from the Trino connector / StarRocks to the server.
 
 1. **AWS S3 with real credentials**: code is ready (`S3_BACKEND=aws`, workflow input `s3_backend=aws`); waits for the
    maintainer's secrets (see Open questions). Once they exist: dispatch `e2e.yml` with `s3_backend=aws`, check TPC-H
@@ -90,3 +84,4 @@ CI uses server build **20b887839edf** (default in `e2e/server.sh` and `e2e.yml`;
 - 2026-10-25 (cloud session 16): AWS run dispatched to test for secrets: run 40205838839 failed in ~1 min (fails early; secrets presumably still missing, cause not read from logs). Wrote `docs/CLIENTS.md` (table of all clients; Next step 2 done). Next step 1 still waits on secrets.
 - 2026-10-25 (cloud session 17): server build c3b276054cc3 verified: all 7 clients (adbc, pandas, polars, duckdb, sqlalchemy, grafana, odbc; complete mode) green in run 40234340287; made it the CI default. AWS item still waits on secrets.
 - 2026-10-26 (cloud session 18): server build 20b887839edf verified: all 7 clients (adbc, pandas, polars, duckdb, sqlalchemy, grafana, odbc; complete mode) green in run 40248211118; made it the CI default. Iceberg time travel not exercised: this repo has no Trino/StarRocks/Iceberg client job yet (the forwarding follow-up lives in the server/connector side); candidate future item: an Iceberg time-travel e2e via ADBC. AWS item still waits on secrets.
+- 2026-10-26 (cloud session 19): server build 60e888bc26ec (duckDbThreads default 4) verified: all 7 clients (adbc, pandas, polars, duckdb, sqlalchemy, grafana, odbc; complete mode) green in run 40262843972 (~4m20s, same as before: no noticeable timing change at SF1 in CI); made it the CI default. AWS item still waits on secrets.
