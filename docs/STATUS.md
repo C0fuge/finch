@@ -19,6 +19,12 @@
 
 ## Next steps (one per session; small and finished)
 
+> **New server build `server-1.0.0-7fbe2d75827c`** (2026-10-26, local coordinator; jar, plugins tar, libs tar + merged
+> `SHA256SUMS` in this repo's assets release) = 60e888bc26ec + planning no longer waits for the cluster to settle after
+> a node left (fixes the intermittent GetFlightInfo TIMED_OUT with a stopped member) + `s3a://`/`s3n://` catalog roots +
+> the deployment's HDFS short-circuit setting is kept. Run the suite once on it and make it the CI default if green.
+
+
 CI uses server build **60e888bc26ec** (= 20b887839edf + `duckDbThreads` default 4; default in `e2e/server.sh` and `e2e.yml`; verified 2026-10-26; 20b887839edf, c3b276054cc3, 4eaab052deaf and int7 stay selectable via `server_build`; includes Iceberg time travel `FOR VERSION/TIMESTAMP AS OF`). Open follow-up (additive, no approval needed): forward Iceberg time travel (`FOR VERSION/TIMESTAMP AS OF`) from the Trino connector / StarRocks to the server.
 
 1. **AWS S3 with real credentials**: code is ready (`S3_BACKEND=aws`, workflow input `s3_backend=aws`); waits for the
