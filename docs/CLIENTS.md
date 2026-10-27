@@ -19,6 +19,7 @@ below use `complete`.
 | SQLAlchemy / Superset | `pip install flightsql-dbapi "sqlalchemy<2"` | `datafusion+flightsql://host:32010?insecure=true&token=<t>` | `token=` in URI | 22/22 + reflection | `import flightsql.sqlalchemy`; Superset itself not run in CI |
 | Grafana | plugin `influxdata-flightsql-datasource` (11.3.0) | host:32010, token auth | token | 22/22 | DECIMAL/DATE/HUGEINT arrive empty: cast in the query; see `GRAFANA.md` |
 | ODBC | Dremio Arrow Flight SQL ODBC (RPM) + unixODBC | DSN, `useEncryption=false` | token | 22/22 | see `ODBC.md` |
+| Metabase | driver jar `arrow-flight-sql.metabase-driver.jar` (J0hnG4lt/metabase-flightsql-driver) in `metabase/metabase:v0.64.2.9` | engine `arrow-flight-sql`, host/port, `useEncryption=false` | `token` field | 22/22 + MBQL | see `METABASE.md` |
 | JDBC, Trino, StarRocks | Arrow Flight SQL JDBC 27/2; Trino plugin; StarRocks connector | — | — | proven in the server's own suite | not in this repo's CI |
 | ClickHouse | — | `arrowFlight()` | — | not usable | plain Flight datasets only, no SQL; does not send Bearer |
 
