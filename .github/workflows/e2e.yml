@@ -93,8 +93,8 @@ jobs:
                 curl -sSL -o "$WORK/mb/plugins/arrow-flight-sql.metabase-driver.jar" \
                   https://github.com/J0hnG4lt/metabase-flightsql-driver/releases/latest/download/arrow-flight-sql.metabase-driver.jar
                 ls -l "$WORK/mb/plugins"
-                (cd "$WORK/mb" && unzip -l plugins/*.jar | grep -vE '/$' | awk '{print $4}' | grep -vE '^(org|io|com|javax|META-INF/(maven|services))/' | head -40
-                 unzip -p plugins/*.jar metabase-plugin.yaml | head -40)
+                (cd "$WORK/mb" && unzip -l plugins/*.jar | grep -vE '/$' | awk '{print $4}' | grep -vE '^(org|io|com|javax|META-INF/(maven|services))/' | head -40 || true
+                 unzip -p plugins/*.jar metabase-plugin.yaml | head -40 || true)
                 docker run -d --name metabase --network afe2e -p 127.0.0.1:3001:3000 -v "$WORK/mb/plugins:/plugins" \
                   -e JAVA_OPTS="--add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow --enable-native-access=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true" \
                   metabase/metabase:${METABASE_TAG:-v0.64.2.9} >/dev/null
