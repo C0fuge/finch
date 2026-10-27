@@ -19,6 +19,26 @@
 
 ## Next steps (one per session; small and finished)
 
+> **Maintainer, 2026-10-28: BI and tools pack - take these before item 1 (which waits for secrets).** Basis: the
+> maintainer's integration research. Each: a CI job against our server (same build as the e2e jobs), answers checked
+> against the reference, a short doc `docs/<TOOL>.md` (setup, what works, known gaps), matrix row in README.
+> - B1. **Metabase**: generic Flight SQL driver https://github.com/J0hnG4lt/metabase-flightsql-driver (Apache-2.0) in a
+>   `metabase/metabase` container: add the database via API, sync metadata, run native + GUI-built queries (filters,
+>   aggregation, field filters), compare answers. If our SQL dialect breaks something, note whether a fork of the driver
+>   (DuckDB dialect, cf. gizmodata/metabase-gizmosql-driver) is needed.
+> - B2. **Superset / SQLAlchemy**: replace the archived `flightsql-dbapi` path with an ADBC-based dialect
+>   (gizmodata/sqlalchemy-gizmosql-adbc-dialect, superset-sqlalchemy-gizmosql-adbc-dialect, Apache-2.0); run a real
+>   `apache/superset` container: add database, SQL Lab query, one chart via API. Keep the old path as a separate row.
+> - B3. **ODBC**: switch the ODBC job to the official Apache Arrow Flight SQL ODBC driver (Arrow 26 RPMs) via unixODBC +
+>   pyodbc (Power BI / Excel / Tableau path); keep the Dremio driver row for comparison.
+> - B4. **DBeaver / DataGrip metadata conformance**: a JDBC `DatabaseMetaData` test (catalogs, schemas, tables, columns,
+>   types, PK/FK empty, SqlInfo) as those tools call it; list gaps as server issues.
+> - B5. **DuckDB as a client** (`adbc` / `adbc_scanner` community extension or Query.Farm `airport`) and **ClickHouse**
+>   (`arrowFlight` table function): add rows; ClickHouse needs the server's plain-Flight command support (server repo,
+>   plugins lane P5) - mark it "waits for P5" until a build has it.
+> - B6. **Grafana**: keep the archived influx plugin row; add a row for the maintained fork
+>   gizmodata/grafana-gizmosql-datasource and check DECIMAL/DATE/HUGEINT (known empty in the influx plugin).
+
 CI uses server build **45fc0a9e6e02** (= 775100bf923f + per-query overhead cuts: describe once per views snapshot, parse check once per node, partial-mode sample-file cache, async executionPath log; DuckDB 1.5.6; verified 2026-10-27); 775100bf923f (= 27f583adccd7 + complete mode describes a query once per catalog-views snapshot; 27f583adccd7 = DuckDB 1.5.6 + Kerberos ticket cache; needs DuckDB 1.5.6 extensions — `e2e/server.sh` downloads official httpfs/iceberg/avro v1.5.6; verified 2026-10-27; 57d252b1437f (DuckDB 1.4.5) = 4d707e2aedfc + one outbound byte budget shared by all Flight streams; 4d707e2aedfc = 7fbe2d75827c + S3 connect retry ~6 s; 7fbe2d75827c = 60e888bc26ec + planning with a node down + s3a/s3n roots; default in `e2e/server.sh` and `e2e.yml`; verified 2026-10-26; 4d707e2aedfc, 60e888bc26ec, 20b887839edf, c3b276054cc3, 4eaab052deaf and int7 stay selectable via `server_build`; includes Iceberg time travel `FOR VERSION/TIMESTAMP AS OF`). Open follow-up (additive, no approval needed): forward Iceberg time travel (`FOR VERSION/TIMESTAMP AS OF`) from the Trino connector / StarRocks to the server.
 
 1. **AWS S3 with real credentials**: code is ready (`S3_BACKEND=aws`, workflow input `s3_backend=aws`); waits for the
