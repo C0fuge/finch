@@ -105,5 +105,5 @@ stop() { docker logs flight1 > "$WORK/flight1.log" 2>&1 || true
       -e RCLONE_CONFIG_C_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" -e RCLONE_CONFIG_C_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
       rclone/rclone:1.68.2 purge "C:$AWS_TEST_BUCKET/$(cat "$WORK/aws-prefix")" || true
   fi
-   docker rm -f grafana flight1 s3 >/dev/null 2>&1 || true; }
+   docker rm -f grafana metabase flight1 s3 >/dev/null 2>&1 || true; }
 "${1:?start|stop}"

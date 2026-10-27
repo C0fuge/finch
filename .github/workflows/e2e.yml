@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       clients:
-        description: "space-separated clients to run (python_adbc python_pandas python_polars python_duckdb python_sqlalchemy grafana odbc)"
+        description: "space-separated clients to run (python_adbc python_pandas python_polars python_duckdb python_sqlalchemy grafana odbc metabase)"
         default: "python_adbc"
       probe:
-        description: "grafana/odbc: run probes instead of TPC-H (any non-empty value)"
+        description: "grafana/odbc/metabase: run probes instead of TPC-H (any non-empty value)"
         default: ""
       s3_backend:
         description: "S3 backend (rclone|ceph|localstack|aws; aws needs repo secrets AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_TEST_BUCKET)"
@@ -84,6 +84,18 @@ jobs:
                 pip install -q pyodbc
                 ODBC_PROBE=${GRAFANA_PROBE:-} python e2e/clients/odbc.py e2e/queries "$WORK/out/$c" \
                   || { rc=1; continue; } ;;
+              metabase)
+                mkdir -p "$WORK/mb/plugins"
+                curl -sSL -o "$WORK/mb/plugins/arrow-flight-sql.metabase-driver.jar" \
+                  https://github.com/J0hnG4lt/metabase-flightsql-driver/releases/latest/download/arrow-flight-sql.metabase-driver.jar
+                ls -l "$WORK/mb/plugins"
+                docker run -d --name metabase --network afe2e -p 127.0.0.1:3001:3000 -v "$WORK/mb/plugins:/plugins" \
+                  -e JAVA_OPTS="--add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow --enable-native-access=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true" \
+                  metabase/metabase:v0.64.2.9 >/dev/null
+                METABASE_PROBE=${GRAFANA_PROBE:-} python e2e/clients/metabase.py http://localhost:3001 flight1:32010 e2e/queries "$WORK/out/$c" \
+                  || rc=1
+                docker logs metabase 2>&1 | grep -iE 'flight|exception|error' | cut -c1-300 | sort | uniq -c | sort -rn | head -15
+                [ -n "${GRAFANA_PROBE:-}" ] && continue ;;
               clickhouse_probe)
                 . "$WORK/env.sh"
                 docker pull -q clickhouse/clickhouse-server:latest >/dev/null
