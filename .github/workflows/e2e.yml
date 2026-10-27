@@ -14,6 +14,9 @@ on:
       server_build:
         description: "server build (45fc0a9e6e02|775100bf923f|57d252b1437f|4d707e2aedfc|60e888bc26ec|20b887839edf|c3b276054cc3|4eaab052deaf|int7)"
         default: "45fc0a9e6e02"
+      metabase_tag:
+        description: "metabase client: image tag"
+        default: "v0.64.2.9"
       result_mode:
         description: "server result mode (partial|complete)"
         default: "complete"
@@ -36,6 +39,7 @@ jobs:
       AWS_TEST_BUCKET: ${{ secrets.AWS_TEST_BUCKET }}
       WORK: ${{ github.workspace }}/work
       GH_TOKEN: ${{ github.token }}
+      METABASE_TAG: ${{ inputs.metabase_tag || 'v0.64.2.9' }}
       GRAFANA_PROBE: ${{ inputs.probe || '' }}
     steps:
       - uses: actions/checkout@v4
@@ -89,9 +93,11 @@ jobs:
                 curl -sSL -o "$WORK/mb/plugins/arrow-flight-sql.metabase-driver.jar" \
                   https://github.com/J0hnG4lt/metabase-flightsql-driver/releases/latest/download/arrow-flight-sql.metabase-driver.jar
                 ls -l "$WORK/mb/plugins"
+                (cd "$WORK/mb" && unzip -l plugins/*.jar | grep -vE '/$' | awk '{print $4}' | grep -vE '^(org|io|com|javax|META-INF/(maven|services))/' | head -40
+                 unzip -p plugins/*.jar metabase-plugin.yaml | head -40)
                 docker run -d --name metabase --network afe2e -p 127.0.0.1:3001:3000 -v "$WORK/mb/plugins:/plugins" \
                   -e JAVA_OPTS="--add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow --enable-native-access=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true" \
-                  metabase/metabase:v0.64.2.9 >/dev/null
+                  metabase/metabase:${METABASE_TAG:-v0.64.2.9} >/dev/null
                 METABASE_PROBE=${GRAFANA_PROBE:-} python e2e/clients/metabase.py http://localhost:3001 flight1:32010 e2e/queries "$WORK/out/$c" \
                   || rc=1
                 docker logs metabase 2>&1 | grep -iE 'flight|exception|error' | cut -c1-300 | sort | uniq -c | sort -rn | head -15
