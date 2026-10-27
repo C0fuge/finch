@@ -22,10 +22,7 @@
 > **Maintainer, 2026-10-28: BI and tools pack - take these before item 1 (which waits for secrets).** Basis: the
 > maintainer's integration research. Each: a CI job against our server (same build as the e2e jobs), answers checked
 > against the reference, a short doc `docs/<TOOL>.md` (setup, what works, known gaps), matrix row in README.
-> - B1. **Metabase**: generic Flight SQL driver https://github.com/J0hnG4lt/metabase-flightsql-driver (Apache-2.0) in a
->   `metabase/metabase` container: add the database via API, sync metadata, run native + GUI-built queries (filters,
->   aggregation, field filters), compare answers. If our SQL dialect breaks something, note whether a fork of the driver
->   (DuckDB dialect, cf. gizmodata/metabase-gizmosql-driver) is needed.
+> - B1. **Metabase**: DONE 2026-10-27 (see Log, `docs/METABASE.md`).
 > - B2. **Superset / SQLAlchemy**: replace the archived `flightsql-dbapi` path with an ADBC-based dialect
 >   (gizmodata/sqlalchemy-gizmosql-adbc-dialect, superset-sqlalchemy-gizmosql-adbc-dialect, Apache-2.0); run a real
 >   `apache/superset` container: add database, SQL Lab query, one chart via API. Keep the old path as a separate row.
@@ -114,3 +111,4 @@ CI uses server build **45fc0a9e6e02** (= 775100bf923f + per-query overhead cuts:
 - 2026-10-27 (cloud session 26): nothing actionable — AWS S3 item still waits on the maintainer's secrets; no re-dispatch. No changes besides this line.
 - 2026-10-27 (cloud session 27): nothing actionable — AWS S3 item still waits on the maintainer's secrets; no re-dispatch. No changes besides this line.
 - 2026-10-27 (cloud session 28): nothing actionable — AWS S3 item still waits on the maintainer's secrets; no re-dispatch. No changes besides this line.
+- 2026-10-27 (cloud session 29): B1 Metabase DONE. Driver J0hnG4lt/metabase-flightsql-driver (latest release jar) in `metabase/metabase:v0.64.2.9`: add database via API (token auth), metadata sync, TPC-H 22/22 identical (native), MBQL count/filter+sum/group-by equal native SQL, native field filter OK — run 40588680869 (client `metabase` in e2e.yml, `e2e/clients/metabase.py`, `docs/METABASE.md`, CLIENTS row). Pitfalls found: `/plugins` must be writable for the container user (else driver silently not loaded); `/api/dataset` caps at 2000 rows (q16 via CSV export); field filters need an un-aliased table. No driver fork needed. Next: B2 (Superset).
