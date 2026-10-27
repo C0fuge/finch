@@ -19,6 +19,13 @@
 
 ## Next steps (one per session; small and finished)
 
+> **New server build `server-1.0.0-45fc0a9e6e02`** (2026-10-27, local coordinator; jar, plugins tar, libs tar + merged
+> `SHA256SUMS` in this repo's assets release) = 27f583adccd7 + per-query overhead cuts (stage 2 item 15: describe once per views
+> snapshot, parse check once per node, partial-mode sample-file cache, executionPath log line written asynchronously). Needs
+> the DuckDB 1.5.6 extension set (server repo `ci-assets`). Candidate for the presentation build: run the suite once on it
+> (note small-query timings) and make it the CI default if green.
+
+
 CI uses server build **775100bf923f** (= 27f583adccd7 + complete mode describes a query once per catalog-views snapshot; 27f583adccd7 = DuckDB 1.5.6 + Kerberos ticket cache; needs DuckDB 1.5.6 extensions — `e2e/server.sh` downloads official httpfs/iceberg/avro v1.5.6; verified 2026-10-27; 57d252b1437f (DuckDB 1.4.5) = 4d707e2aedfc + one outbound byte budget shared by all Flight streams; 4d707e2aedfc = 7fbe2d75827c + S3 connect retry ~6 s; 7fbe2d75827c = 60e888bc26ec + planning with a node down + s3a/s3n roots; default in `e2e/server.sh` and `e2e.yml`; verified 2026-10-26; 4d707e2aedfc, 60e888bc26ec, 20b887839edf, c3b276054cc3, 4eaab052deaf and int7 stay selectable via `server_build`; includes Iceberg time travel `FOR VERSION/TIMESTAMP AS OF`). Open follow-up (additive, no approval needed): forward Iceberg time travel (`FOR VERSION/TIMESTAMP AS OF`) from the Trino connector / StarRocks to the server.
 
 1. **AWS S3 with real credentials**: code is ready (`S3_BACKEND=aws`, workflow input `s3_backend=aws`); waits for the
