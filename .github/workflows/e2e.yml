@@ -108,6 +108,18 @@ jobs:
                   -v "$WORK/../e2e/superset/superset_config.py:/app/pythonpath/superset_config.py:ro" \
                   -e SUPERSET_CONFIG_PATH=/app/pythonpath/superset_config.py finch-superset \
                   bash -c "superset db upgrade && superset fab create-admin --username admin --firstname a --lastname b --email a@example.com --password admin && superset init && gunicorn -w 2 -t 900 -b 0.0.0.0:8088 'superset.app:create_app()'" >/dev/null
+                if [ -n "${GRAFANA_PROBE:-}" ]; then
+                  for i in $(seq 100); do curl -sf localhost:8088/health >/dev/null && break; sleep 3; done
+                  docker exec -e U="gizmosql://superset:$FLIGHT_TOKEN@flight1:32010" superset /app/.venv/bin/python -c "
+import os,traceback,sqlalchemy
+print('sqlalchemy',sqlalchemy.__version__)
+try:
+    from sqlalchemy import create_engine,text
+    e=create_engine(os.environ['U'])
+    with e.connect() as c: print(c.execute(text('select 1')).fetchall())
+except Exception: traceback.print_exc()
+" 2>&1 | sed "s/$FLIGHT_TOKEN/***/g" | tail -40
+                fi
                 SUPERSET_PROBE=${GRAFANA_PROBE:-} python e2e/clients/superset.py http://localhost:8088 flight1:32010 e2e/queries "$WORK/out/$c" \
                   || rc=1
                 docker logs superset 2>&1 | grep -iE 'flight|exception|error' | cut -c1-300 | sort | uniq -c | sort -rn | head -15
