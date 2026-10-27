@@ -17,6 +17,7 @@ below use `complete`.
 | polars | + `polars` | `read_database` over ADBC | as ADBC | 22/22 | same script |
 | DuckDB | + `duckdb<2` | ADBC Arrow table scanned by DuckDB | as ADBC | 22/22 | `airport` extension does NOT work (needs its own Flight actions) |
 | SQLAlchemy / Superset | `pip install flightsql-dbapi "sqlalchemy<2"` | `datafusion+flightsql://host:32010?insecure=true&token=<t>` | `token=` in URI | 22/22 + reflection | `import flightsql.sqlalchemy`; Superset itself not run in CI |
+| Superset (ADBC dialect) | `superset-sqlalchemy-gizmosql-adbc-dialect` in `apache/superset:6.0.0` | `gizmosql://user:<t>@host:32010` | basic auth (token as password) | 22/22 + dataset/chart | needs dialect patch for 2 server behaviours, see docs/SUPERSET.md |
 | Grafana | plugin `influxdata-flightsql-datasource` (11.3.0) | host:32010, token auth | token | 22/22 | DECIMAL/DATE/HUGEINT arrive empty: cast in the query; see `GRAFANA.md` |
 | ODBC | Dremio Arrow Flight SQL ODBC (RPM) + unixODBC | DSN, `useEncryption=false` | token | 22/22 | see `ODBC.md` |
 | Metabase | driver jar `arrow-flight-sql.metabase-driver.jar` (J0hnG4lt/metabase-flightsql-driver) in `metabase/metabase:v0.64.2.9` | engine `arrow-flight-sql`, host/port, `useEncryption=false` | `token` field | 22/22 + MBQL | see `METABASE.md` |

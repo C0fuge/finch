@@ -23,7 +23,7 @@
 > maintainer's integration research. Each: a CI job against our server (same build as the e2e jobs), answers checked
 > against the reference, a short doc `docs/<TOOL>.md` (setup, what works, known gaps), matrix row in README.
 > - B1. **Metabase**: DONE 2026-10-27 (see Log, `docs/METABASE.md`).
-> - B2. **Superset / SQLAlchemy**: replace the archived `flightsql-dbapi` path with an ADBC-based dialect
+> - B2. **DONE 2026-10-27** (see Log, `docs/SUPERSET.md`). Was: **Superset / SQLAlchemy**: replace the archived `flightsql-dbapi` path with an ADBC-based dialect
 >   (gizmodata/sqlalchemy-gizmosql-adbc-dialect, superset-sqlalchemy-gizmosql-adbc-dialect, Apache-2.0); run a real
 >   `apache/superset` container: add database, SQL Lab query, one chart via API. Keep the old path as a separate row.
 > - B3. **ODBC**: switch the ODBC job to the official Apache Arrow Flight SQL ODBC driver (Arrow 26 RPMs) via unixODBC +
@@ -55,6 +55,8 @@ CI uses server build **45fc0a9e6e02** (= 775100bf923f + per-query overhead cuts:
 - (answered) Table names: partial mode needs `schema.table` and accepts only single-table SELECTs (joins/most FROM-subqueries rejected: "Can only select from ONE table"); complete mode runs full DuckDB SQL, bare names allowed, but `tpch.` prefix also works. Joins in partial mode are expected to be done by the client engine (Trino). Maintainer: confirm that generic clients are meant to use `resultMode=complete` for arbitrary SQL.
 - (old) Which table-name form does the server expect from generic clients (`tpch.lineitem`, or a session schema)? The
   maintainer's Trino plugin uses schema `tpch`; ADBC with prefix `tpch.` failed on 20/22 queries.
+
+- Superset dialect (B2) needs server changes to run unpatched: ADBC `vendor_version` should start with `duckdb ` (currently `0.0.1`), and transaction statements (ROLLBACK/BEGIN/COMMIT) should be accepted as no-ops. Maintainer: worth doing in the server repo?
 
 ## Log
 
@@ -112,3 +114,4 @@ CI uses server build **45fc0a9e6e02** (= 775100bf923f + per-query overhead cuts:
 - 2026-10-27 (cloud session 27): nothing actionable — AWS S3 item still waits on the maintainer's secrets; no re-dispatch. No changes besides this line.
 - 2026-10-27 (cloud session 28): nothing actionable — AWS S3 item still waits on the maintainer's secrets; no re-dispatch. No changes besides this line.
 - 2026-10-27 (cloud session 29): B1 Metabase DONE. Driver J0hnG4lt/metabase-flightsql-driver (latest release jar) in `metabase/metabase:v0.64.2.9`: add database via API (token auth), metadata sync, TPC-H 22/22 identical (native), MBQL count/filter+sum/group-by equal native SQL, native field filter OK — run 40588680869 (client `metabase` in e2e.yml, `e2e/clients/metabase.py`, `docs/METABASE.md`, CLIENTS row). Pitfalls found: `/plugins` must be writable for the container user (else driver silently not loaded); `/api/dataset` caps at 2000 rows (q16 via CSV export); field filters need an un-aliased table. No driver fork needed. Next: B2 (Superset).
+- 2026-10-27 (cloud session 30): B2 Superset DONE. `apache/superset:6.0.0` + superset-sqlalchemy-gizmosql-adbc-dialect: add database, SQL Lab TPC-H 22/22 identical, dataset + chart-data equal native SQL — run 40602735841 (client `superset` in e2e.yml, `e2e/clients/superset.py`, `e2e/superset/`, `docs/SUPERSET.md`, CLIENTS row). Needs a small dialect patch for two server behaviours (vendor_version `0.0.1` instead of `duckdb ...`; ROLLBACK/BEGIN/COMMIT rejected as non-queries) — see Open questions. Next: B3 (ODBC official driver).
