@@ -5,12 +5,15 @@
 Sets Metabase up, adds the database (engine arrow-flight-sql, token auth, plaintext gRPC), syncs metadata, runs each
 TPC-H query as a native query (/api/dataset) and a few GUI-style (MBQL) queries; MBQL answers must equal native ones.
 """
+import csv
 import datetime
+import io
 import json
 import os
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 URL, FLIGHT, QDIR, OUT = sys.argv[1:5]
@@ -54,7 +57,35 @@ def dataset(query):
     return [[cell(v, t) for v, t in zip(r, cols)] for r in res["data"]["rows"]]
 
 
+def export_csv(query):
+    """/api/dataset caps results at 2000 rows; the CSV export does not (raw values with format_rows=false)."""
+    body = urllib.parse.urlencode({"query": json.dumps(query), "format_rows": "false"}).encode()
+    req = urllib.request.Request(URL + "/api/dataset/csv", data=body, headers={"X-Metabase-Session": SESSION})
+    with urllib.request.urlopen(req, timeout=600) as r:
+        rows = list(csv.reader(io.StringIO(r.read().decode("utf-8"))))[1:]
+    out = []
+    for row in rows:
+        out.append([("\\N" if v == "" else (str(d.date() if (d := _ts(v)) and d.time() == datetime.time(0) else d) if _ts(v) else v))
+                    for v in row])
+    return out
+
+
+def _ts(v):
+    if len(v) >= 10 and v[4:5] == "-" and v[7:8] == "-":
+        try:
+            return datetime.datetime.fromisoformat(v.replace("Z", "+00:00")).replace(tzinfo=None)
+        except ValueError:
+            return None
+    return None
+
+
 def native(db, sql):
+    q = {"database": db, "type": "native", "native": {"query": sql}}
+    rows = dataset(q)
+    return export_csv(q) if len(rows) >= 2000 else rows
+
+
+def native_json(db, sql):
     return dataset({"database": db, "type": "native", "native": {"query": sql}})
 
 
