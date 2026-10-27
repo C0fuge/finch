@@ -93,3 +93,4 @@ CI uses server build **45fc0a9e6e02** (= 775100bf923f + per-query overhead cuts:
 - 2026-10-27 (cloud session 25): server build 45fc0a9e6e02 (DuckDB 1.5.6, per-query overhead cuts) verified: all 7 clients (complete mode) green in run 40479236461 (job 4m21s; push run 40479228157 adbc green); made it the CI default (775100bf923f selectable). Coarse CI timing unchanged at SF1. AWS item still waits on secrets.
 - 2026-10-27 (cloud session 26): nothing actionable — AWS S3 item still waits on the maintainer's secrets; no re-dispatch. No changes besides this line.
 - 2026-10-27 (cloud session 27): nothing actionable — AWS S3 item still waits on the maintainer's secrets; no re-dispatch. No changes besides this line.
+- 2026-10-27 (cloud session 28): nothing actionable — AWS S3 item still waits on the maintainer's secrets; no re-dispatch. No changes besides this line.
