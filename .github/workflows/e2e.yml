@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       clients:
-        description: "space-separated clients to run (python_adbc python_pandas python_polars python_duckdb python_sqlalchemy grafana odbc metabase)"
+        description: "space-separated clients to run (python_adbc python_pandas python_polars python_duckdb python_sqlalchemy grafana odbc metabase superset)"
         default: "python_adbc"
       probe:
-        description: "grafana/odbc/metabase: run probes instead of TPC-H (any non-empty value)"
+        description: "grafana/odbc/metabase/superset: run probes instead of TPC-H (any non-empty value)"
         default: ""
       s3_backend:
         description: "S3 backend (rclone|ceph|localstack|aws; aws needs repo secrets AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_TEST_BUCKET)"
@@ -101,6 +101,16 @@ jobs:
                 METABASE_PROBE=${GRAFANA_PROBE:-} python e2e/clients/metabase.py http://localhost:3001 flight1:32010 e2e/queries "$WORK/out/$c" \
                   || rc=1
                 docker logs metabase 2>&1 | grep -iE 'flight|exception|error' | cut -c1-300 | sort | uniq -c | sort -rn | head -15
+                [ -n "${GRAFANA_PROBE:-}" ] && continue ;;
+              superset)
+                docker build -q -t finch-superset -f e2e/superset/Dockerfile e2e/superset
+                docker run -d --name superset --network afe2e -p 127.0.0.1:8088:8088 \
+                  -v "$WORK/../e2e/superset/superset_config.py:/app/pythonpath/superset_config.py:ro" \
+                  -e SUPERSET_CONFIG_PATH=/app/pythonpath/superset_config.py finch-superset \
+                  bash -c "superset db upgrade && superset fab create-admin --username admin --firstname a --lastname b --email a@example.com --password admin && superset init && gunicorn -w 2 -t 900 -b 0.0.0.0:8088 'superset.app:create_app()'" >/dev/null
+                SUPERSET_PROBE=${GRAFANA_PROBE:-} python e2e/clients/superset.py http://localhost:8088 flight1:32010 e2e/queries "$WORK/out/$c" \
+                  || rc=1
+                docker logs superset 2>&1 | grep -iE 'flight|exception|error' | cut -c1-300 | sort | uniq -c | sort -rn | head -15
                 [ -n "${GRAFANA_PROBE:-}" ] && continue ;;
               clickhouse_probe)
                 . "$WORK/env.sh"
