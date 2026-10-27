@@ -179,7 +179,7 @@ def main():
         tag = {"lf": {"id": "11111111-1111-1111-1111-111111111111", "name": "lf", "display-name": "Flag", "type": "dimension",
                       "dimension": ["field", fields["l_returnflag"], None], "widget-type": "string/="}}
         a = dataset({"database": dbid, "type": "native", "native": {
-            "query": "select count(*) from tpch.lineitem l where {{lf}}", "template-tags": tag},
+            "query": "select count(*) from tpch.lineitem where {{lf}}", "template-tags": tag},
             "parameters": [{"type": "string/=", "target": ["dimension", ["template-tag", "lf"]], "value": ["R"]}]})
         b = native(dbid, "select count(*) from tpch.lineitem where l_returnflag = 'R'")
         print("FIELDFILTER", "OK" if a == b else "DIFF", a, b, flush=True)
