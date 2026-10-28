@@ -33,14 +33,32 @@ def main():
         print("fn:", r)
     for r in con.execute("SELECT extension_name, extension_version, install_path FROM duckdb_extensions() WHERE extension_name='adbc_scanner'").fetchall():
         print("ext:", r)
-    opts = "{'driver': '%s', 'uri': '%s', 'adbc.flight.sql.authorization_header': 'Bearer %s'}" % (
-        lib, os.environ["FLIGHT_URI"], os.environ["FLIGHT_TOKEN"])
-    con.execute("SET VARIABLE conn = (SELECT adbc_connect(%s))" % opts)
+    drv, uri = lib, os.environ["FLIGHT_URI"]
+    auth = "Bearer " + os.environ["FLIGHT_TOKEN"]
+    key = "adbc.flight.sql.authorization_header"
+    forms = [
+        "{'driver': '%s', 'uri': '%s', '%s': '%s'}" % (drv, uri, key, auth),
+        "{'driver': '%s', 'uri': '%s', 'options': {'%s': '%s'}}" % (drv, uri, key, auth),
+        "MAP {'driver': '%s', 'uri': '%s', '%s': '%s'}" % (drv, uri, key, auth),
+        "'driver=%s;uri=%s;%s=%s'" % (drv, uri, key, auth),
+        "'%s'" % uri,
+    ]
+    db = None
+    for f in forms:
+        try:
+            r = con.execute("SELECT * FROM adbc_scan(%s, 'SELECT 1 AS x')" % f).fetchall()
+            print("FORM OK:", f.replace(auth, "***")[:120], r)
+            db = f
+            break
+        except Exception as e:  # noqa: BLE001
+            print("FORM FAIL:", f.replace(auth, "***")[:80], "->", " ".join(str(e).split())[:300].replace(auth, "***"))
+    if db is None:
+        sys.exit(1)
     for name in sorted(f[:-4] for f in os.listdir(qdir) if f.endswith(".sql")):
         sql = open(os.path.join(qdir, name + ".sql"), encoding="utf-8").read().strip().rstrip(";")
         try:
             lit = "'" + sql.replace("'", "''") + "'"
-            rows = con.execute("SELECT * FROM adbc_scan(getvariable('conn'), %s)" % lit).fetchall()
+            rows = con.execute("SELECT * FROM adbc_scan(%s, %s)" % (db, lit)).fetchall()
             with open(os.path.join(out, name + ".tsv"), "w", encoding="utf-8") as f:
                 for r in rows:
                     f.write("\t".join(cell(v) for v in r) + "\n")
