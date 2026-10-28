@@ -27,6 +27,8 @@ def main():
         kw = {DatabaseOptions.AUTHORIZATION_HEADER.value: "Bearer " + os.environ["FLIGHT_TOKEN"]}
     if os.environ.get("FLIGHT_COMPRESSION"):
         kw["adbc.flight.sql.rpc.call_header.arrow-compression"] = os.environ["FLIGHT_COMPRESSION"]
+    if os.environ.get("FLIGHT_TLS_CA"):  # throwaway server cert in the ldap/jwt modes
+        kw["adbc.flight.sql.client_option.tls_root_certs"] = open(os.environ["FLIGHT_TLS_CA"]).read()
     conn = flight.connect(os.environ["FLIGHT_URI"], db_kwargs=kw)
     for name in sorted(f[:-4] for f in os.listdir(qdir) if f.endswith(".sql")):
         sql = open(os.path.join(qdir, name + ".sql"), encoding="utf-8").read()

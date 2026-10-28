@@ -23,7 +23,12 @@ else:
               ("no credentials", {}, False)]
 
 
+CA = open(E["FLIGHT_TLS_CA"]).read() if E.get("FLIGHT_TLS_CA") else None
+
+
 def run(kw):
+    if CA:
+        kw = {**kw, "adbc.flight.sql.client_option.tls_root_certs": CA}
     with flight.connect(E["FLIGHT_URI"], db_kwargs=kw) as conn, conn.cursor() as cur:
         cur.execute("select count(*) from tpch.nation")
         return cur.fetchall()[0][0]

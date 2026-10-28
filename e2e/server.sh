@@ -80,12 +80,18 @@ start() {
   fi
   if [ "$S3_BACKEND" != aws ]; then s3opts="-Ds3Endpoint=$s3ep -Ds3UrlStyle=path -Ds3Region=us-east-1"; fi
   local authenv=(-e FLIGHT_AUTH_PROVIDER=token -e FLIGHT_AUTH_TOKEN="$token") authcp=""
-  AUTH_MODE="${AUTH_MODE:-token}"
+  AUTH_MODE="${AUTH_MODE:-token}"; tlsenv=()
   if [ "$AUTH_MODE" != token ]; then
     [ "$SERVER_BUILD" = a9e43ca5e296 ] || { echo "AUTH_MODE=$AUTH_MODE needs SERVER_BUILD=a9e43ca5e296"; exit 1; }
     mkdir -p "$WORK/server/auth-x"
     tar --zstd -xf "$ASSETS/flight-auth-1.0.0-$SERVER_BUILD.tar.zst" -C "$WORK/server/auth-x"
     authcp=":/app/auth-x/auth/$AUTH_MODE/*"
+    # the providers require TLS: throwaway self-signed cert (CI only), clients trust it via FLIGHT_TLS_CA
+    mkdir -p "$WORK/flight"
+    openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj /CN=localhost -addext subjectAltName=DNS:localhost,DNS:flight1 \
+      -keyout "$WORK/flight/tls.key" -out "$WORK/flight/tls.crt" 2>/dev/null
+    chmod 644 "$WORK/flight/tls.key"
+    tlsenv=(-e FLIGHT_TLS_CERT=/work/tls.crt -e FLIGHT_TLS_KEY=/work/tls.key)
   fi
   if [ "$AUTH_MODE" = ldap ]; then  # public test image: users like fry/fry, admin bind DN, plaintext port 10389
     docker run -d --name ldap --network $NET ghcr.io/rroemhild/docker-test-openldap:master >/dev/null
@@ -101,7 +107,7 @@ start() {
   docker run -d --name flight1 --network $NET -p 127.0.0.1:32010:32010 \
     -v "$WORK/server":/app:ro -v "$WORK/duckdb":/ext/duckdb-home:ro -v "$WORK/flight":/work -w /work \
     -e LANG=C.UTF-8 -e FLIGHT_S3_ACCESS_KEY="$s3key" -e FLIGHT_S3_SECRET_KEY="$s3secret" \
-    "${authenv[@]}" eclipse-temurin:21-jdk \
+    "${authenv[@]}" "${tlsenv[@]}" eclipse-temurin:21-jdk \
     java -Xmx"$SERVER_HEAP" --add-opens=java.base/java.nio=ALL-UNNAMED -Darrow.enable_unsafe_memory_access=true \
       -DdataDir=s3://$bucket/$prefix $s3opts \
       -Darrowflight.plugins.dir=/app/plugins -Darrowflight.duckdb.extensionDir=/ext/duckdb-home/extensions \
@@ -115,7 +121,9 @@ start() {
   docker logs flight1 > "$WORK/flight1.log" 2>&1 || true
   grep -q 'Server Arrow Flight SQL started' "$WORK/flight1.log" || { tail -50 "$WORK/flight1.log"; exit 1; }
   # clients on the host reach the server via the published port; --hosts flight1 is resolved via /etc/hosts
-  printf 'export FLIGHT_URI=grpc://localhost:32010\nexport FLIGHT_TOKEN=%s\n' "$token" > "$WORK/env.sh"
+  uri=grpc://localhost:32010; [ "$AUTH_MODE" = token ] || uri=grpc+tls://localhost:32010
+  printf 'export FLIGHT_URI=%s\nexport FLIGHT_TOKEN=%s\n' "$uri" "$token" > "$WORK/env.sh"
+  [ "$AUTH_MODE" = token ] || echo "export FLIGHT_TLS_CA=$WORK/flight/tls.crt" >> "$WORK/env.sh"
   if [ "$AUTH_MODE" = ldap ]; then  # no static token: login with user/password
     printf 'export FLIGHT_USER=fry FLIGHT_PASSWORD=fry FLIGHT_BAD_USER=fry FLIGHT_BAD_PASSWORD=wrong-%s\nunset FLIGHT_TOKEN\n' "$RANDOM" >> "$WORK/env.sh"
   elif [ "$AUTH_MODE" = jwt ]; then cat "$WORK/jwt.env" >> "$WORK/env.sh"; fi
