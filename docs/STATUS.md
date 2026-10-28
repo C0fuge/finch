@@ -19,6 +19,23 @@
 
 ## Next steps (one per session; small and finished)
 
+> **Maintainer, 2026-10-28 14:30: next client pack (C1-C6), take in order.** A new server build `a9e43ca5e296` is being
+> uploaded to the assets (adds LDAP/AD and JWT login, Hive ORC and text tables, size-aware DuckDB threads/memory, opt-in
+> distributed complete mode); make it the default if the suite is green.
+> - C1. **Login rows for every client that can send user/password or a bearer token** (JDBC, ODBC, ADBC Go/C++/Python,
+>   pyarrow, Metabase, Superset, Grafana, DuckDB adbc_scanner): server with the LDAP provider against an OpenLDAP container
+>   and with the JWT provider against a local JWKS; positive + wrong password / expired token rows. Doc `docs/AUTH.md`.
+> - C2. **More language clients:** R (`adbcflightsql` / `arrow`), Go (ADBC Flight SQL driver directly), Rust
+>   (`arrow-flight` crate Flight SQL client), .NET (`Apache.Arrow.Flight.Sql` / ADBC), Node.js (if a maintained Flight SQL
+>   client exists). TPC-H 22/22 identical per client, or a clear "not usable: why" row.
+> - C3. **Dataframe tools:** Polars (`read_database` via ADBC), pandas (`adbc` + `read_sql`), Ibis (if it has a Flight SQL
+>   backend), Jupyter notebook smoke (nbconvert run) - answers checked.
+> - C4. **dbt:** check whether a maintained adapter can run against Flight SQL (e.g. via ADBC); if none, a "not usable"
+>   row with the reason.
+> - C5. **Tableau / Power BI docs:** setup docs with the JDBC driver and the official ODBC driver (no CI possible), plus a
+>   TDC/connector-file template if useful.
+> - C6. **ClickHouse row** as soon as a server build has plain-Flight command descriptors (server plugins lane P5).
+
 > **Server build `cadd1aca9c23`** is verified and the CI default (2026-10-28, see Log). **Compressed-stream rows: ADBC (Python/Go driver), pyarrow.flight and Java Flight zstd+lz4 DONE 2026-10-28; ADBC C++ closed (the ADBC Flight SQL driver is Go; the C++ Flight client is what pyarrow uses). Still open: proof from the server log that frames were really compressed (needs a server-side per-stream log line).** Opt-in
 > result stream compression ZSTD/LZ4 (client asks via call header or Flight SQL session option `arrow-compression`; no default
 > or wire change for clients that do not ask). Add rows (`zstd` and `lz4`, same answers as plain) for the clients that support
