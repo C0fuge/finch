@@ -32,3 +32,22 @@ the query fails with `frame has different field lengths` (or returns 0 rows). Wo
 `DECIMAL`→`DOUBLE`, `DATE`/`TIMESTAMP`→`VARCHAR`, `HUGEINT` (e.g. `sum(int)`)→`BIGINT`. Integers, doubles and
 strings work as is. The CI client applies these casts automatically (via `DESCRIBE`), so the TPC-H result equals
 the reference after the usual normalisation.
+
+## Maintained fork: `gizmodata-gizmosql-datasource`
+
+Plugin from gizmodata/grafana-gizmosql-datasource (latest GitHub release zip, source version 1.9.1; unsigned, so
+`GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=gizmodata-gizmosql-datasource` and unzip into `/var/lib/grafana/plugins`).
+CI: client `grafana_gizmosql` (same `e2e/clients/grafana.py`, `GRAFANA_PLUGIN=gizmosql`), Grafana 11.3.0:
+TPC-H **22/22 identical to the reference with no casts** (run 40672712545) - DECIMAL, DATE and HUGEINT
+(`sum(int)`) columns work, unlike the influx plugin.
+
+```yaml
+datasources:
+  - name: flight
+    type: gizmodata-gizmosql-datasource
+    access: proxy
+    jsonData: { host: "flight-server", port: 32010, useTLS: false }
+    secureJsonData: { token: "<FLIGHT_AUTH_TOKEN>" }
+```
+
+Query field is `rawSql`. DATE/TIMESTAMP arrive as Grafana time fields. Recommendation: use this plugin.
