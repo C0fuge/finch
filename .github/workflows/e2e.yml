@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       clients:
-        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 java_flight java_flight_zstd java_flight_lz4 python_pandas python_polars python_duckdb python_sqlalchemy grafana odbc metabase superset jdbc_meta duckdb_adbc_scanner)"
+        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 java_flight java_flight_zstd java_flight_lz4 python_pandas python_polars python_duckdb python_sqlalchemy grafana grafana_gizmosql odbc metabase superset jdbc_meta duckdb_adbc_scanner)"
         default: "python_adbc"
       probe:
         description: "grafana/odbc/metabase/superset: run probes instead of TPC-H (any non-empty value)"
@@ -92,6 +92,19 @@ jobs:
                 GRAFANA_PROBE=${GRAFANA_PROBE:-} python e2e/clients/grafana.py http://localhost:3000 flight1:32010 e2e/queries "$WORK/out/$c" \
                   || rc=1
                 docker logs grafana 2>&1 | grep -iE 'panic|error|decimal|unsupported' | cut -c1-300 | sort | uniq -c | sort -rn | head -15 ;;
+              grafana_gizmosql)
+                mkdir -p "$WORK/gfplug" && chmod 777 "$WORK/gfplug"
+                url=$(curl -sS https://api.github.com/repos/gizmodata/grafana-gizmosql-datasource/releases/latest \
+                  | python3 -c 'import json,sys; r=json.load(sys.stdin); print(r["tag_name"], file=sys.stderr); print([a["browser_download_url"] for a in r["assets"] if a["name"].endswith(".zip")][0])')
+                echo "plugin zip: $url"
+                curl -sSL -o "$WORK/gf.zip" "$url" && unzip -q -o "$WORK/gf.zip" -d "$WORK/gfplug" && chmod -R a+rX "$WORK/gfplug"
+                find "$WORK/gfplug" -maxdepth 2 | head -20
+                docker run -d --name grafana_gizmosql --network afe2e -p 127.0.0.1:3000:3000 -v "$WORK/gfplug:/var/lib/grafana/plugins" \
+                  -e GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=gizmodata-gizmosql-datasource grafana/grafana-oss:11.3.0 >/dev/null
+                GRAFANA_PLUGIN=gizmosql GRAFANA_PROBE=${GRAFANA_PROBE:-} python e2e/clients/grafana.py http://localhost:3000 flight1:32010 e2e/queries "$WORK/out/$c" \
+                  || rc=1
+                docker logs grafana_gizmosql 2>&1 | grep -iE 'panic|error|decimal|unsupported' | cut -c1-300 | sort | uniq -c | sort -rn | head -15
+                docker rm -f grafana_gizmosql >/dev/null ;;
               odbc)
                 unset ODBC_DRIVER LD_LIBRARY_PATH
                 sudo apt-get install -qq -y unixodbc rpm2cpio cpio >/dev/null

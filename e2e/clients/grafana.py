@@ -14,6 +14,7 @@ import urllib.error
 import urllib.request
 
 URL, FLIGHT, QDIR, OUT = sys.argv[1:5]
+GIZMO = os.environ.get("GRAFANA_PLUGIN") == "gizmosql"  # maintained fork gizmodata-gizmosql-datasource
 AUTH = "Basic " + base64.b64encode(b"admin:admin").decode()
 
 
@@ -78,11 +79,16 @@ def main():
         except Exception:  # noqa: BLE001
             time.sleep(2)
     print("plugins:", [p["id"] for p in call("/api/plugins?type=datasource") if "flight" in p["id"]])
-    ds = call("/api/datasources", {
-        "name": "flight", "type": "influxdata-flightsql-datasource", "access": "proxy",
-        "jsonData": {"host": FLIGHT, "secure": False, "selectedAuthType": "token", "metadata": []},
-        "secureJsonData": {"token": os.environ["FLIGHT_TOKEN"]},
-    })["datasource"]
+    if GIZMO:
+        host, port = FLIGHT.rsplit(":", 1)
+        body = {"name": "flight", "type": "gizmodata-gizmosql-datasource", "access": "proxy",
+                "jsonData": {"host": host, "port": int(port), "useTLS": False},
+                "secureJsonData": {"token": os.environ["FLIGHT_TOKEN"]}}
+    else:
+        body = {"name": "flight", "type": "influxdata-flightsql-datasource", "access": "proxy",
+                "jsonData": {"host": FLIGHT, "secure": False, "selectedAuthType": "token", "metadata": []},
+                "secureJsonData": {"token": os.environ["FLIGHT_TOKEN"]}}
+    ds = call("/api/datasources", body)["datasource"]
     print("datasource uid", ds["uid"])
     print("health:", call(f"/api/datasources/uid/{ds['uid']}/health"))
     if os.environ.get("GRAFANA_PROBE"):
@@ -92,7 +98,7 @@ def main():
                     "select l_orderkey, l_shipdate from tpch.lineitem limit 2"]:
             try:
                 r = call("/api/ds/query", {"from": "now-1h", "to": "now", "queries": [
-                    {"refId": "A", "datasource": {"uid": ds["uid"], "type": ds["type"]}, "queryText": sql, "rawQuery": True,
+                    {"refId": "A", "datasource": {"uid": ds["uid"], "type": ds["type"]}, "queryText": sql, "rawSql": sql, "rawQuery": True,
                      "format": "table"}]})["results"]["A"]
                 print("PROBE ok ", sql, json.dumps(r.get("frames", r))[:300], flush=True)
             except Exception as e:  # noqa: BLE001
@@ -101,7 +107,7 @@ def main():
     for name in sorted(f[:-4] for f in os.listdir(QDIR) if f.endswith(".sql")):
         sql = open(os.path.join(QDIR, name + ".sql"), encoding="utf-8").read().strip().rstrip(";")
         try:
-            rows = run(ds, wrap(ds, sql) if os.environ.get("GRAFANA_RAW") is None else sql)
+            rows = run(ds, sql if GIZMO or os.environ.get("GRAFANA_RAW") else wrap(ds, sql))
             with open(os.path.join(OUT, name + ".tsv"), "w", encoding="utf-8") as f:
                 for r in rows:
                     f.write("\t".join(r) + "\n")
