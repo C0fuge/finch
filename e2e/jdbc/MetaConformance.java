@@ -34,7 +34,17 @@ public class MetaConformance {
     }
 
     public static void main(String[] a) throws Exception {
-        String url = "jdbc:arrow-flight-sql://" + a[0] + "/?useEncryption=false&token=" + System.getenv("FLIGHT_TOKEN");
+        String user = System.getenv("FLIGHT_USER"), trust = System.getenv("FLIGHT_TRUSTSTORE");
+        // login mode (LDAP): TLS with the throwaway cert in a JKS truststore, user/password; else plaintext + bearer token
+        String url = user == null ? "jdbc:arrow-flight-sql://" + a[0] + "/?useEncryption=false&token=" + System.getenv("FLIGHT_TOKEN")
+            : "jdbc:arrow-flight-sql://" + a[0] + "/?useEncryption=true&trustStore=" + trust + "&trustStorePassword=changeit";
+        if (user != null) {
+            try (Connection bad = DriverManager.getConnection(url + "&user=" + user + "&password=" + System.getenv("FLIGHT_BAD_PASSWORD"))) {
+                bad.getMetaData().getCatalogs().close();
+                fails++; info("FAIL: wrong password accepted");
+            } catch (SQLException e) { info("OK: wrong password refused: " + String.valueOf(e.getMessage()).split("\n")[0]); }
+            url += "&user=" + user + "&password=" + System.getenv("FLIGHT_PASSWORD");
+        }
         String[] tpch = {"customer", "lineitem", "nation", "orders", "part", "partsupp", "region", "supplier"};
         try (Connection c = DriverManager.getConnection(url)) {
             DatabaseMetaData m = c.getMetaData();

@@ -2,7 +2,8 @@
 """Plain pyarrow.flight client speaking Flight SQL by hand (CommandStatementQuery), TSV answers for e2e/compare.py.
 
     python_pyarrow_flight.py <queries-dir> <out-dir>      env: FLIGHT_URI, FLIGHT_TOKEN, TABLE_PREFIX (default 'tpch.'),
-    FLIGHT_COMPRESSION (optional: zstd|lz4 -> call header 'arrow-compression')
+    FLIGHT_USER/FLIGHT_PASSWORD (Flight handshake login instead of the bearer FLIGHT_TOKEN, e.g. LDAP; FLIGHT_TLS_CA = PEM file of the
+    server cert), FLIGHT_COMPRESSION (optional: zstd|lz4 -> call header 'arrow-compression')
 Reads every endpoint of the FlightInfo (partial mode may return several).
 """
 import os
@@ -40,11 +41,18 @@ def main():
     qdir, out = sys.argv[1:3]
     prefix = os.environ.get("TABLE_PREFIX", "tpch.")
     os.makedirs(out, exist_ok=True)
-    headers = [(b"authorization", ("Bearer " + os.environ["FLIGHT_TOKEN"]).encode())]
+    tls = {}
+    if os.environ.get("FLIGHT_TLS_CA"):
+        tls["tls_root_certs"] = open(os.environ["FLIGHT_TLS_CA"], "rb").read()
+    client = fl.connect(os.environ["FLIGHT_URI"], **tls)
+    if os.environ.get("FLIGHT_USER"):
+        k, v = client.authenticate_basic_token(os.environ["FLIGHT_USER"], os.environ["FLIGHT_PASSWORD"])
+        headers = [(k, v)]
+    else:
+        headers = [(b"authorization", ("Bearer " + os.environ["FLIGHT_TOKEN"]).encode())]
     if os.environ.get("FLIGHT_COMPRESSION"):
         headers.append((b"arrow-compression", os.environ["FLIGHT_COMPRESSION"].encode()))
     opts = fl.FlightCallOptions(headers=headers)
-    client = fl.connect(os.environ["FLIGHT_URI"])
     for name in sorted(f[:-4] for f in os.listdir(qdir) if f.endswith(".sql")):
         sql = open(os.path.join(qdir, name + ".sql"), encoding="utf-8").read()
         sql = re.sub(r"\b(from|join)\s+(" + "|".join(TABLES) + r")\b", lambda m: f"{m[1]} {prefix}{m[2]}", sql, flags=re.I)
