@@ -104,10 +104,25 @@ def main():
                         "user": {"first_name": "a", "last_name": "b", "email": "admin@example.com", "password": "Finch-Test-1234!"}})
     SESSION = call("/api/session", {"username": "admin@example.com", "password": "Finch-Test-1234!"})["id"]
     host, port = FLIGHT.split(":")
-    token = os.environ["FLIGHT_TOKEN"]
     last = None
-    for details in ({"host": host, "port": int(port), "token": token, "useEncryption": False},
-                    {"host": host, "port": int(port), "username": "metabase", "password": token, "useEncryption": False}):
+    if os.environ.get("FLIGHT_USER"):  # LDAP login over TLS, trusting the throwaway server cert
+        pem = open(os.environ["FLIGHT_TLS_CA"]).read()
+        base = {"host": host, "port": int(port), "useEncryption": True, "disableCertificateVerification": False,
+                "tls-root-certs-value": pem}
+        bad = {**base, "username": os.environ["FLIGHT_BAD_USER"], "password": os.environ["FLIGHT_BAD_PASSWORD"]}
+        try:
+            call("/api/database", {"name": "flight-bad", "engine": "arrow-flight-sql", "details": bad,
+                                   "is_full_sync": False, "is_on_demand": False, "schedules": {}})
+            print("LOGIN wrong password: ACCEPTED (unexpected)", flush=True)
+            sys.exit(1)
+        except RuntimeError as e:
+            print("LOGIN wrong password refused:", " ".join(str(e).split())[:300], flush=True)
+        candidates = ({**base, "username": os.environ["FLIGHT_USER"], "password": os.environ["FLIGHT_PASSWORD"]},)
+    else:
+        token = os.environ["FLIGHT_TOKEN"]
+        candidates = ({"host": host, "port": int(port), "token": token, "useEncryption": False},
+                      {"host": host, "port": int(port), "username": "metabase", "password": token, "useEncryption": False})
+    for details in candidates:
         try:
             db = call("/api/database", {"name": "flight", "engine": "arrow-flight-sql", "details": details,
                                         "is_full_sync": True, "is_on_demand": False, "schedules": {}})
