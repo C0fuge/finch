@@ -28,6 +28,11 @@ def main():
     con = duckdb.connect()
     for s in ("INSTALL adbc_scanner FROM community", "LOAD adbc_scanner"):
         con.execute(s)
+    print("duckdb", duckdb.__version__)
+    for r in con.execute("SELECT function_type, function_name, parameters FROM duckdb_functions() WHERE function_name ILIKE '%adbc%'").fetchall():
+        print("fn:", r)
+    for r in con.execute("SELECT extension_name, extension_version, install_path FROM duckdb_extensions() WHERE extension_name='adbc_scanner'").fetchall():
+        print("ext:", r)
     opts = "{'driver': '%s', 'uri': '%s', 'adbc.flight.sql.authorization_header': 'Bearer %s'}" % (
         lib, os.environ["FLIGHT_URI"], os.environ["FLIGHT_TOKEN"])
     con.execute("SET VARIABLE conn = (SELECT adbc_connect(%s))" % opts)
