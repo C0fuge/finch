@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       clients:
-        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 python_pandas python_polars python_duckdb python_sqlalchemy grafana odbc metabase superset jdbc_meta)"
+        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 java_flight java_flight_zstd java_flight_lz4 python_pandas python_polars python_duckdb python_sqlalchemy grafana odbc metabase superset jdbc_meta)"
         default: "python_adbc"
       probe:
         description: "grafana/odbc/metabase/superset: run probes instead of TPC-H (any non-empty value)"
@@ -70,6 +70,14 @@ jobs:
                 case "$c" in *_zstd) export FLIGHT_COMPRESSION=zstd;; *_lz4) export FLIGHT_COMPRESSION=lz4;; *) unset FLIGHT_COMPRESSION;; esac
                 python e2e/clients/python_pyarrow_flight.py e2e/queries "$WORK/out/$c"
                 docker logs flight1 2>&1 | grep -iE 'compress' | cut -c1-250 | sort | uniq -c | sort -rn | head -8 || true
+                unset FLIGHT_COMPRESSION ;;
+              java_flight|java_flight_zstd|java_flight_lz4)
+                if [ ! -d "$WORK/jf/lib" ]; then
+                  mvn -q -f e2e/java-flight/pom.xml dependency:copy-dependencies -DoutputDirectory="$WORK/jf/lib" -DincludeScope=runtime
+                fi
+                case "$c" in *_zstd) export FLIGHT_COMPRESSION=zstd;; *_lz4) export FLIGHT_COMPRESSION=lz4;; *) unset FLIGHT_COMPRESSION;; esac
+                java --add-opens=java.base/java.nio=ALL-UNNAMED -cp "$WORK/jf/lib/*" e2e/java-flight/JavaFlight.java \
+                  e2e/queries "$WORK/out/$c" flight1:32010
                 unset FLIGHT_COMPRESSION ;;
               python_pandas|python_polars|python_duckdb)
                 pip install -q adbc-driver-flightsql pyarrow pandas polars duckdb
