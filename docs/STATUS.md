@@ -19,16 +19,12 @@
 
 ## Next steps (one per session; small and finished)
 
-> **New server build `server-1.0.0-cadd1aca9c23`** (2026-10-28, local coordinator; jar, plugins tar, libs tar + merged
-> `SHA256SUMS` in this repo's assets release). Since 7562a5bdb7b9 (so it also covers what 4e77c6bda59a brought): opt-in result
-> stream compression ZSTD/LZ4 (stage 3 item 20; the client asks via call header or Flight SQL session option `arrow-compression`;
-> buffers compressed in parallel, `flightCompressionThreads`; no default or wire change for clients that do not ask), opt-in S3
-> read cache `arrowflight.s3.cacheMegabytes`, size-aware `duckDbThreads` default (cores/4, between 2 and 8; was 4), Iceberg time
-> travel planned in partial mode, position deletes grouped. Needs the DuckDB 1.5.6 extension set (server repo `ci-assets`). Run
-> the suite once on it (note timings) and make it the CI default if green.
-> Then add compressed-stream rows (`zstd` and `lz4`, same answers as plain) for the clients that support it: pyarrow, ADBC
-> Go and C++ (call header `arrow-compression`), Java Flight with `arrow-compression` (+ `zstd-jni`; `commons-compress` for
-> lz4); stock JDBC/ODBC drivers must not ask.
+> **Server build `cadd1aca9c23`** is verified and the CI default (2026-10-28, see Log). **Open: compressed-stream rows.** Opt-in
+> result stream compression ZSTD/LZ4 (client asks via call header or Flight SQL session option `arrow-compression`; no default
+> or wire change for clients that do not ask). Add rows (`zstd` and `lz4`, same answers as plain) for the clients that support
+> it: pyarrow, ADBC Go and C++ (call header `arrow-compression`), Java Flight with `arrow-compression` (+ `zstd-jni`;
+> `commons-compress` for lz4); stock JDBC/ODBC drivers must not ask. Also still available: opt-in S3 read cache
+> `arrowflight.s3.cacheMegabytes`, `flightCompressionThreads`.
 
 
 > **Maintainer, 2026-10-28: BI and tools pack - take these before item 1 (which waits for secrets).** Basis: the
@@ -47,7 +43,7 @@
 > - B6. **Grafana**: keep the archived influx plugin row; add a row for the maintained fork
 >   gizmodata/grafana-gizmosql-datasource and check DECIMAL/DATE/HUGEINT (known empty in the influx plugin).
 
-CI uses server build **45fc0a9e6e02** (= 775100bf923f + per-query overhead cuts: describe once per views snapshot, parse check once per node, partial-mode sample-file cache, async executionPath log; DuckDB 1.5.6; verified 2026-10-27); 775100bf923f (= 27f583adccd7 + complete mode describes a query once per catalog-views snapshot; 27f583adccd7 = DuckDB 1.5.6 + Kerberos ticket cache; needs DuckDB 1.5.6 extensions — `e2e/server.sh` downloads official httpfs/iceberg/avro v1.5.6; verified 2026-10-27; 57d252b1437f (DuckDB 1.4.5) = 4d707e2aedfc + one outbound byte budget shared by all Flight streams; 4d707e2aedfc = 7fbe2d75827c + S3 connect retry ~6 s; 7fbe2d75827c = 60e888bc26ec + planning with a node down + s3a/s3n roots; default in `e2e/server.sh` and `e2e.yml`; verified 2026-10-26; 4d707e2aedfc, 60e888bc26ec, 20b887839edf, c3b276054cc3, 4eaab052deaf and int7 stay selectable via `server_build`; includes Iceberg time travel `FOR VERSION/TIMESTAMP AS OF`). Open follow-up (additive, no approval needed): forward Iceberg time travel (`FOR VERSION/TIMESTAMP AS OF`) from the Trino connector / StarRocks to the server.
+CI uses server build **cadd1aca9c23** (DuckDB 1.5.6; 45fc0a9e6e02 = previous default, selectable); earlier: **45fc0a9e6e02** (= 775100bf923f + per-query overhead cuts: describe once per views snapshot, parse check once per node, partial-mode sample-file cache, async executionPath log; DuckDB 1.5.6; verified 2026-10-27); 775100bf923f (= 27f583adccd7 + complete mode describes a query once per catalog-views snapshot; 27f583adccd7 = DuckDB 1.5.6 + Kerberos ticket cache; needs DuckDB 1.5.6 extensions — `e2e/server.sh` downloads official httpfs/iceberg/avro v1.5.6; verified 2026-10-27; 57d252b1437f (DuckDB 1.4.5) = 4d707e2aedfc + one outbound byte budget shared by all Flight streams; 4d707e2aedfc = 7fbe2d75827c + S3 connect retry ~6 s; 7fbe2d75827c = 60e888bc26ec + planning with a node down + s3a/s3n roots; default in `e2e/server.sh` and `e2e.yml`; verified 2026-10-26; 4d707e2aedfc, 60e888bc26ec, 20b887839edf, c3b276054cc3, 4eaab052deaf and int7 stay selectable via `server_build`; includes Iceberg time travel `FOR VERSION/TIMESTAMP AS OF`). Open follow-up (additive, no approval needed): forward Iceberg time travel (`FOR VERSION/TIMESTAMP AS OF`) from the Trino connector / StarRocks to the server.
 
 1. **AWS S3 with real credentials**: code is ready (`S3_BACKEND=aws`, workflow input `s3_backend=aws`); waits for the
    maintainer's secrets (see Open questions). Once they exist: dispatch `e2e.yml` with `s3_backend=aws`, check TPC-H
@@ -130,3 +126,4 @@ CI uses server build **45fc0a9e6e02** (= 775100bf923f + per-query overhead cuts:
 - 2026-10-27 (cloud session 30): B2 Superset DONE. `apache/superset:6.0.0` + superset-sqlalchemy-gizmosql-adbc-dialect: add database, SQL Lab TPC-H 22/22 identical, dataset + chart-data equal native SQL — run 40602735841 (client `superset` in e2e.yml, `e2e/clients/superset.py`, `e2e/superset/`, `docs/SUPERSET.md`, CLIENTS row). Needs a small dialect patch for two server behaviours (vendor_version `0.0.1` instead of `duckdb ...`; ROLLBACK/BEGIN/COMMIT rejected as non-queries) — see Open questions. Next: B3 (ODBC official driver).
 - 2026-10-28 (cloud session 31): B3 ODBC DONE. Official Apache Arrow Flight SQL ODBC 26.0.0 (el9 RPM from apache.jfrog.io, unpacked with rpm2cpio; extra runtime libs liburiparser1/libre2/libutf8proc via apt + symlinks) + unixODBC + pyodbc: metadata OK, TPC-H 22/22 identical, run 40610392211 together with the Dremio driver (clients `odbc_apache odbc`; probe run 40609911205). Helper workflow `odbc-apache-probe.yml` (dispatch only) lists Arrow packages. Pitfall: dispatched e2e runs get cancelled by a pending push run (concurrency group). Next: B4 (DBeaver/DataGrip metadata conformance).
 - 2026-10-28 (cloud session 32): B4 JDBC metadata DONE. Client `jdbc_meta` (`e2e/jdbc/MetaConformance.java`, driver 18.3.0 from Maven Central, runs with the source launcher): run 40614144465 green, 0 FAIL, 8 GAPs (missing SqlInfo -> driver NPE, empty getTypeInfo/keywords/functions, no remarks); first run 40613669218 failed on the NPE before the check was made per-method. Doc `docs/JDBC_METADATA.md`, CLIENTS row. Next: B5 (DuckDB adbc/airport client + ClickHouse; both previously probed - airport and ClickHouse arrowFlight closed in sessions 5 and 12, so B5 is mostly the `adbc_scanner` community extension; check it).
+- 2026-10-28 (cloud session 33): server build cadd1aca9c23 verified and made the CI default (`e2e/server.sh`, `e2e.yml`; 1.5.6 extension set): all 11 clients (adbc, pandas, polars, duckdb, sqlalchemy, grafana, odbc, odbc_apache, metabase, superset, jdbc_meta; complete mode) green in run 40625378574 (job 6m26s, server start 29 s, clients 5m44s). Compressed-stream rows not started (see Next steps). B5 (adbc_scanner) still open after that.
