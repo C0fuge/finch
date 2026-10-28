@@ -102,7 +102,7 @@ start() {
   elif [ "$AUTH_MODE" = jwt ]; then
     python3 -m venv "$WORK/authvenv" && "$WORK/authvenv/bin/pip" install -q "pyjwt[crypto]"
     "$WORK/authvenv/bin/python" "$(dirname "$0")/jwt_keys.py" "$WORK/flight" "$WORK/jwt.env"
-    authenv=(-e FLIGHT_AUTH_PROVIDER=jwt -e FLIGHT_JWT_JWKS_FILE=/work/jwks.json -e FLIGHT_JWT_ISSUER=https://issuer.test -e FLIGHT_JWT_AUDIENCE=finch)
+    authenv=(-e FLIGHT_AUTH_PROVIDER=jwt -e FLIGHT_JWT_JWKS_FILE=/work/jwks.json -e FLIGHT_JWT_ISSUER=https://issuer.test)
   fi
   docker run -d --name flight1 --network $NET -p 127.0.0.1:32010:32010 \
     -v "$WORK/server":/app:ro -v "$WORK/duckdb":/ext/duckdb-home:ro -v "$WORK/flight":/work -w /work \
