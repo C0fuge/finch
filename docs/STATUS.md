@@ -75,8 +75,8 @@ CI uses server build **a9e43ca5e296** (DuckDB 1.5.6; LDAP/JWT login, Hive ORC/te
    22/22 and timing, record in the Log.
 
 > **C1 status (2026-10-28, session 42):** LDAP proven for ADBC Python (login 22/22 + refusals, `docs/AUTH.md`, TLS throwaway cert).
-> Session 43: pyarrow.flight and JDBC LDAP rows DONE. Session 44: ODBC (Apache) LDAP row DONE. Remaining C1: JWT (blocked by server bug, Open questions); LDAP rows for
-> DuckDB adbc_scanner, Metabase, Superset, Grafana - take them in that order, then C2-C6.
+> Session 43: pyarrow.flight and JDBC LDAP rows DONE. Session 44: ODBC (Apache) LDAP row DONE. Session 45: DuckDB adbc_scanner LDAP row DONE. Remaining C1: JWT (blocked by server bug, Open questions); LDAP rows for
+> Metabase, Superset, Grafana - take them in that order, then C2-C6.
 
 
 - C1 JWT: server bug - `FLIGHT_JWT_AUDIENCE` set -> NPE at start in `JwtVerifier` (immutable `Set.of(audience)`, nimbus calls `contains(null)`); unset -> refused (required). Server repo fix: use a `HashSet` for the audiences. Maintainer: please forward. (TLS question resolved: CI uses a throwaway cert; `FLIGHT_ALLOW_INSECURE` not used.)
@@ -168,3 +168,4 @@ CI uses server build **a9e43ca5e296** (DuckDB 1.5.6; LDAP/JWT login, Hive ORC/te
 - 2026-10-28 (cloud session 42): C1 partial. TLS route for the ldap/jwt modes (throwaway cert in `e2e/server.sh`, ADBC clients trust it via `FLIGHT_TLS_CA`). LDAP: ADBC Python 22/22 + `auth_check` PASS (login ok; wrong password, unknown user, no credentials refused) - run 40729632840. JWT: server NPE in `JwtVerifier` with audience set, audience required (runs 40730237858, 40730519233); `docs/AUTH.md`. Next: LDAP rows for the other clients, then C2.
 - 2026-10-28 (cloud session 43): C1 LDAP rows for pyarrow.flight (handshake login via `authenticate_basic_token`, TLS root cert; TPC-H 22/22 identical) and JDBC (`jdbc_meta`: user/password URL, JKS truststore from the throwaway cert, `useSystemTrustStore=false` is required or the trustStore is ignored; wrong password refused, 0 FAIL) - run 40734590031 green (first run 40734261638 failed on the truststore point). Next: LDAP rows for ODBC, duckdb_adbc_scanner, Metabase, Superset, Grafana; JWT waits for the server fix.
 - 2026-10-28 (cloud session 44): C1 LDAP row for ODBC (official Apache driver, UID/PWD over TLS with `trustedCerts`; `e2e/clients/odbc.py`): TPC-H 22/22 identical, wrong password refused - run 40755018981 (`auth_mode=ldap clients=odbc_apache`), docs/AUTH.md. Next: LDAP rows for duckdb_adbc_scanner, Metabase, Superset, Grafana; JWT waits for the server fix.
+- 2026-10-28 (cloud session 45): C1 LDAP row for DuckDB `adbc_scanner` (username/password + `tls_root_certs` ATTACH options; TPC-H 22/22 identical, wrong password refused) - run 40770269011, docs/AUTH.md. Next: LDAP rows for Metabase, Superset, Grafana; JWT waits for the server fix.
