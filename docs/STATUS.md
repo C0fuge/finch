@@ -75,8 +75,8 @@ CI uses server build **a9e43ca5e296** (DuckDB 1.5.6; LDAP/JWT login, Hive ORC/te
    22/22 and timing, record in the Log.
 
 > **C1 status (2026-10-28, session 42):** LDAP proven for ADBC Python (login 22/22 + refusals, `docs/AUTH.md`, TLS throwaway cert).
-> Session 43: pyarrow.flight and JDBC LDAP rows DONE. Session 46: Metabase LDAP row DONE. Session 44: ODBC (Apache) LDAP row DONE. Session 45: DuckDB adbc_scanner LDAP row DONE. Remaining C1: JWT (blocked by server bug, Open questions); LDAP rows for
-> Superset, Grafana - take them in that order, then C2-C6.
+> Session 43: pyarrow.flight and JDBC LDAP rows DONE. Session 46: Metabase LDAP row DONE. Session 44: ODBC (Apache) LDAP row DONE. Session 45: DuckDB adbc_scanner LDAP row DONE. Session 47: Superset LDAP row DONE. Remaining C1: JWT (blocked by server bug, Open questions); LDAP row for
+> Grafana, then C2-C6.
 
 
 - C1 JWT: server bug - `FLIGHT_JWT_AUDIENCE` set -> NPE at start in `JwtVerifier` (immutable `Set.of(audience)`, nimbus calls `contains(null)`); unset -> refused (required). Server repo fix: use a `HashSet` for the audiences. Maintainer: please forward. (TLS question resolved: CI uses a throwaway cert; `FLIGHT_ALLOW_INSECURE` not used.)
@@ -170,3 +170,4 @@ CI uses server build **a9e43ca5e296** (DuckDB 1.5.6; LDAP/JWT login, Hive ORC/te
 - 2026-10-28 (cloud session 44): C1 LDAP row for ODBC (official Apache driver, UID/PWD over TLS with `trustedCerts`; `e2e/clients/odbc.py`): TPC-H 22/22 identical, wrong password refused - run 40755018981 (`auth_mode=ldap clients=odbc_apache`), docs/AUTH.md. Next: LDAP rows for duckdb_adbc_scanner, Metabase, Superset, Grafana; JWT waits for the server fix.
 - 2026-10-28 (cloud session 45): C1 LDAP row for DuckDB `adbc_scanner` (username/password + `tls_root_certs` ATTACH options; TPC-H 22/22 identical, wrong password refused) - run 40770269011, docs/AUTH.md. Next: LDAP rows for Metabase, Superset, Grafana; JWT waits for the server fix.
 - 2026-10-28 (session 46): C1 Metabase LDAP row DONE (TLS + custom CA, wrong password refused, sync, TPC-H 22/22, MBQL + field filter OK; run 40780371612, docs/AUTH.md). Next: Superset LDAP, then Grafana LDAP.
+- 2026-10-28 (session 47): C1 Superset LDAP row DONE (TLS via `SSL_CERT_FILE` in the container, wrong password refused at test_connection, SQL Lab TPC-H 22/22, chart OK; run 40785650464, docs/AUTH.md). Next: Grafana LDAP, then C2.
