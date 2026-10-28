@@ -34,30 +34,53 @@ def main():
     for r in con.execute("SELECT extension_name, extension_version, install_path FROM duckdb_extensions() WHERE extension_name='adbc_scanner'").fetchall():
         print("ext:", r)
     drv, uri = lib, os.environ["FLIGHT_URI"]
-    auth = "Bearer " + os.environ["FLIGHT_TOKEN"]
-    key = "adbc.flight.sql.authorization_header"
-    forms = [
-        "(TYPE adbc, driver '%s', \"%s\" '%s')" % (drv, key, auth),
-        "(TYPE adbc, driver '%s', headers '%s')" % (drv, auth),
-        "(TYPE adbc, driver '%s', authorization_header '%s')" % (drv, auth),
-        "(TYPE adbc, driver '%s', token '%s')" % (drv, os.environ["FLIGHT_TOKEN"]),
-        "(TYPE adbc, driver '%s', username 'u', password '%s')" % (drv, os.environ["FLIGHT_TOKEN"]),
-    ]
-    db = None
-    for f in forms:
-        try:
-            con.execute("ATTACH '%s' AS fl %s" % (uri, f))
-            r = con.execute("SELECT * FROM adbc_scan('fl', 'SELECT 1 AS x')").fetchall()
-            print("FORM OK:", f.replace(auth, "***").replace(os.environ["FLIGHT_TOKEN"], "***")[:120], r)
-            db = f
-            break
-        except Exception as e:  # noqa: BLE001
-            m = " ".join(str(e).split()).replace(auth, "***").replace(os.environ["FLIGHT_TOKEN"], "***")
-            print("FORM FAIL:", f.replace(auth, "***").replace(os.environ["FLIGHT_TOKEN"], "***")[-60:], "->", m[:350])
+    if os.environ.get("FLIGHT_USER"):  # ldap mode: login with user/password over TLS (throwaway cert)
+        ca = open(os.environ["FLIGHT_TLS_CA"]).read().replace("'", "''")
+        base = "(TYPE adbc, driver '%s', username '%%s', password '%%s', \"adbc.flight.sql.client_option.tls_root_certs\" '%s')" % (drv, ca)
+        for label, u, pw, ok in (("bad", os.environ["FLIGHT_BAD_USER"], os.environ["FLIGHT_BAD_PASSWORD"], False),
+                                 ("good", os.environ["FLIGHT_USER"], os.environ["FLIGHT_PASSWORD"], True)):
             try:
-                con.execute("DETACH fl")
-            except Exception:  # noqa: BLE001
-                pass
+                con.execute("ATTACH '%s' AS fl %s" % (uri, base % (u, pw)))
+                con.execute("SELECT * FROM adbc_scan('fl', 'SELECT 1 AS x')").fetchall()
+                got = True
+            except Exception as e:  # noqa: BLE001
+                got = False
+                print("login %s refused: %s" % (label, " ".join(str(e).split()).replace(pw, "***")[:200]))
+            if got != ok:
+                print("AUTH FAIL: %s credentials %s" % (label, "accepted" if got else "refused"))
+                sys.exit(1)
+            if not ok:
+                try:
+                    con.execute("DETACH fl")
+                except Exception:  # noqa: BLE001
+                    pass
+        print("login ok; wrong password refused")
+        db = True
+    else:
+        db = None
+            auth = "Bearer " + os.environ["FLIGHT_TOKEN"]
+            key = "adbc.flight.sql.authorization_header"
+            forms = [
+                "(TYPE adbc, driver '%s', \"%s\" '%s')" % (drv, key, auth),
+                "(TYPE adbc, driver '%s', headers '%s')" % (drv, auth),
+                "(TYPE adbc, driver '%s', authorization_header '%s')" % (drv, auth),
+                "(TYPE adbc, driver '%s', token '%s')" % (drv, os.environ["FLIGHT_TOKEN"]),
+                "(TYPE adbc, driver '%s', username 'u', password '%s')" % (drv, os.environ["FLIGHT_TOKEN"]),
+            ]
+            for f in forms:
+                try:
+                    con.execute("ATTACH '%s' AS fl %s" % (uri, f))
+                    r = con.execute("SELECT * FROM adbc_scan('fl', 'SELECT 1 AS x')").fetchall()
+                    print("FORM OK:", f.replace(auth, "***").replace(os.environ["FLIGHT_TOKEN"], "***")[:120], r)
+                    db = f
+                    break
+                except Exception as e:  # noqa: BLE001
+                    m = " ".join(str(e).split()).replace(auth, "***").replace(os.environ["FLIGHT_TOKEN"], "***")
+                    print("FORM FAIL:", f.replace(auth, "***").replace(os.environ["FLIGHT_TOKEN"], "***")[-60:], "->", m[:350])
+                    try:
+                        con.execute("DETACH fl")
+                    except Exception:  # noqa: BLE001
+                        pass
     if db is None:
         sys.exit(1)
     for name in sorted(f[:-4] for f in os.listdir(qdir) if f.endswith(".sql")):
