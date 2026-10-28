@@ -15,3 +15,5 @@ CI: dispatch `e2e.yml` with `auth_mode=ldap|jwt`, `clients="python_adbc auth_che
 JWT: with `FLIGHT_JWT_AUDIENCE` set, the server fails at start with `NullPointerException ... DefaultJWTClaimsVerifier.<init>`
 (`Set.contains(null)` on an immutable `Set.of(audience)` in `JwtVerifier`; nimbus calls `contains(null)`); without it
 the server refuses to start (`requires FLIGHT_JWT_AUDIENCE`). Fix: pass a mutable `HashSet` for the audiences (runs 40730237858, 40730519233).
+
+Other LDAP rows (run 40734590031, `clients="pyarrow_flight jdbc_meta"`): **pyarrow.flight** logs in with `FlightClient.authenticate_basic_token` (TPC-H 22/22 identical; `tls_root_certs` = throwaway cert); **JDBC** URL `jdbc:arrow-flight-sql://host:port/?useEncryption=true&useSystemTrustStore=false&trustStore=<jks>&trustStorePassword=...&user=..&password=..` (without `useSystemTrustStore=false` the trustStore is ignored and the handshake fails); wrong password refused.
