@@ -8,6 +8,17 @@ CI (`e2e.yml`, client `odbc`, `e2e/clients/odbc.py`): unixODBC + pyodbc, RPM unp
 Result: TPC-H 22/22 identical to the reference in `resultMode=complete` (run 40121536029); metadata works
 (`SQLTables` lists `tpch.*`/`types.*`, `SQLColumns` returns names and types).
 
+## Official Apache Arrow driver (26.0.0)
+
+Package: `arrow2600-flight-sql-odbc-libs-26.0.0-1.el9.x86_64.rpm` from
+`https://apache.jfrog.io/artifactory/arrow/almalinux/9/x86_64/Packages/` (only EL RPMs; no deb). It holds one file,
+`/usr/lib64/libarrow_flight_sql_odbc.so.2600.0.0`, plus a template ini and `connection-options.md`.
+CI client `odbc_apache`: TPC-H 22/22 identical to the reference, metadata (`SQLTables`, `SQLColumns`) works — run 40610392211
+(same connection string as the Dremio driver: `Host`, `Port`, `useEncryption=false`, `Token`).
+Ubuntu 24.04 needs the driver's shared libs: `liburiparser1`, `libre2-10` (driver wants `libre2.so.9`: a symlink to
+`.so.10` works), `libutf8proc` (soname `.so.2` expected; symlink to whatever is installed). Other deps are bundled.
+Windows MSI (Power BI / Excel / Tableau) is the same driver code; not run in CI.
+
 ## Linux config
 
 `odbcinst.ini`:
