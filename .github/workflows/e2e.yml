@@ -175,7 +175,7 @@ jobs:
                 docker logs flight1 2>&1 | grep -iE 'exception|error|unsupported|descriptor' | cut -c1-400 | tail -15 || true
                 continue ;;
               duckdb_adbc_scanner)
-                pip install -q adbc-driver-flightsql pyarrow duckdb
+                pip install -q adbc-driver-flightsql pyarrow "duckdb<2"
                 python e2e/clients/duckdb_adbc_scanner.py e2e/queries "$WORK/out/$c" ;;
               duckdb_airport)
                 pip install -q "duckdb<2"
