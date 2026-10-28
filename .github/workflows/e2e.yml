@@ -12,7 +12,7 @@ on:
         description: "S3 backend (rclone|ceph|localstack|aws; aws needs repo secrets AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_TEST_BUCKET)"
         default: "rclone"
       server_build:
-        description: "server build (cadd1aca9c23|45fc0a9e6e02|775100bf923f|57d252b1437f|4d707e2aedfc|60e888bc26ec|20b887839edf|c3b276054cc3|4eaab052deaf|int7)"
+        description: "server build (a9e43ca5e296|cadd1aca9c23|45fc0a9e6e02|775100bf923f|57d252b1437f|4d707e2aedfc|60e888bc26ec|20b887839edf|c3b276054cc3|4eaab052deaf|int7)"
         default: "cadd1aca9c23"
       metabase_tag:
         description: "metabase client: image tag"
