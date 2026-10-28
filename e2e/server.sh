@@ -4,7 +4,7 @@
 # Writes $WORK/env.sh (source it): FLIGHT_URI, FLIGHT_TOKEN. Throwaway credentials per run.
 # Optional: S3_BACKEND=rclone(default)|ceph (Ceph RGW from quay.io/ceph/demo, CEPH_IMAGE)|localstack (pinned 3.8.1, path-style)|aws (real S3: needs AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_TEST_BUCKET; vhost-style, no endpoint; data under prefix finch-ci-<run id>, purged on stop), RESULT_MODE=partial|complete, SERVER_BUILD=int7|a9e43ca5e296|cadd1aca9c23|45fc0a9e6e02|775100bf923f|27f583adccd7|4eaab052deaf|c3b276054cc3|20b887839edf|60e888bc26ec|4d707e2aedfc|57d252b1437f, SERVER_HEAP=2g.
 set -euo pipefail
-WORK="${WORK:?}"; NET=afe2e; SERVER_BUILD="${SERVER_BUILD:-cadd1aca9c23}"; RESULT_MODE="${RESULT_MODE:-partial}"
+WORK="${WORK:?}"; NET=afe2e; SERVER_BUILD="${SERVER_BUILD:-a9e43ca5e296}"; RESULT_MODE="${RESULT_MODE:-partial}"
 SERVER_HEAP="${SERVER_HEAP:-2g}"; EXT=v1.4.5
 case "$SERVER_BUILD" in 27f583adccd7|775100bf923f|45fc0a9e6e02|cadd1aca9c23|a9e43ca5e296) EXT=v1.5.6;; esac  # DuckDB 1.5.6 builds
 

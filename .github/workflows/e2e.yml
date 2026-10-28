@@ -13,7 +13,7 @@ on:
         default: "rclone"
       server_build:
         description: "server build (a9e43ca5e296|cadd1aca9c23|45fc0a9e6e02|775100bf923f|57d252b1437f|4d707e2aedfc|60e888bc26ec|20b887839edf|c3b276054cc3|4eaab052deaf|int7)"
-        default: "cadd1aca9c23"
+        default: "a9e43ca5e296"
       metabase_tag:
         description: "metabase client: image tag"
         default: "v0.64.2.9"
@@ -31,7 +31,7 @@ jobs:
     env:
       CLIENTS: ${{ inputs.clients || 'python_adbc' }}
       RESULT_MODE: ${{ inputs.result_mode || 'complete' }}
-      SERVER_BUILD: ${{ inputs.server_build || 'cadd1aca9c23' }}
+      SERVER_BUILD: ${{ inputs.server_build || 'a9e43ca5e296' }}
       S3_BACKEND: ${{ inputs.s3_backend || 'rclone' }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
