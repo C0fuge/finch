@@ -19,6 +19,18 @@
 
 ## Next steps (one per session; small and finished)
 
+> **New server build `server-1.0.0-cadd1aca9c23`** (2026-10-28, local coordinator; jar, plugins tar, libs tar + merged
+> `SHA256SUMS` in this repo's assets release). Since 7562a5bdb7b9 (so it also covers what 4e77c6bda59a brought): opt-in result
+> stream compression ZSTD/LZ4 (stage 3 item 20; the client asks via call header or Flight SQL session option `arrow-compression`;
+> buffers compressed in parallel, `flightCompressionThreads`; no default or wire change for clients that do not ask), opt-in S3
+> read cache `arrowflight.s3.cacheMegabytes`, size-aware `duckDbThreads` default (cores/4, between 2 and 8; was 4), Iceberg time
+> travel planned in partial mode, position deletes grouped. Needs the DuckDB 1.5.6 extension set (server repo `ci-assets`). Run
+> the suite once on it (note timings) and make it the CI default if green.
+> Then add compressed-stream rows (`zstd` and `lz4`, same answers as plain) for the clients that support it: pyarrow, ADBC
+> Go and C++ (call header `arrow-compression`), Java Flight with `arrow-compression` (+ `zstd-jni`; `commons-compress` for
+> lz4); stock JDBC/ODBC drivers must not ask.
+
+
 > **Maintainer, 2026-10-28: BI and tools pack - take these before item 1 (which waits for secrets).** Basis: the
 > maintainer's integration research. Each: a CI job against our server (same build as the e2e jobs), answers checked
 > against the reference, a short doc `docs/<TOOL>.md` (setup, what works, known gaps), matrix row in README.
