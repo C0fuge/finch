@@ -2,7 +2,7 @@
 """ADBC Flight SQL client: run the TPC-H queries, write TSV answers for e2e/compare.py.
 
     python_adbc.py <queries-dir> <out-dir>      env: FLIGHT_URI, FLIGHT_TOKEN, TABLE_PREFIX (default 'tpch.'),
-    FLIGHT_COMPRESSION (optional: zstd|lz4 -> call header 'arrow-compression')
+    FLIGHT_USER/FLIGHT_PASSWORD (login instead of the bearer FLIGHT_TOKEN, e.g. LDAP), FLIGHT_COMPRESSION (optional: zstd|lz4 -> call header 'arrow-compression')
 """
 import os
 import re
@@ -21,7 +21,10 @@ def main():
     qdir, out = sys.argv[1:3]
     prefix = os.environ.get("TABLE_PREFIX", "tpch.")
     os.makedirs(out, exist_ok=True)
-    kw = {DatabaseOptions.AUTHORIZATION_HEADER.value: "Bearer " + os.environ["FLIGHT_TOKEN"]}
+    if os.environ.get("FLIGHT_USER"):
+        kw = {"username": os.environ["FLIGHT_USER"], "password": os.environ["FLIGHT_PASSWORD"]}
+    else:
+        kw = {DatabaseOptions.AUTHORIZATION_HEADER.value: "Bearer " + os.environ["FLIGHT_TOKEN"]}
     if os.environ.get("FLIGHT_COMPRESSION"):
         kw["adbc.flight.sql.rpc.call_header.arrow-compression"] = os.environ["FLIGHT_COMPRESSION"]
     conn = flight.connect(os.environ["FLIGHT_URI"], db_kwargs=kw)
