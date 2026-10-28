@@ -23,6 +23,7 @@ below use `complete`.
 | ODBC (official) | Apache Arrow Flight SQL ODBC 26.0.0 (el9 RPM) + unixODBC | same keys as above | token | 22/22 | see `ODBC.md`; Power BI / Excel / Tableau route |
 | Metabase | driver jar `arrow-flight-sql.metabase-driver.jar` (J0hnG4lt/metabase-flightsql-driver) in `metabase/metabase:v0.64.2.9` | engine `arrow-flight-sql`, host/port, `useEncryption=false` | `token` field | 22/22 + MBQL | see `METABASE.md` |
 | JDBC, Trino, StarRocks | Arrow Flight SQL JDBC 27/2; Trino plugin; StarRocks connector | — | — | proven in the server's own suite | not in this repo's CI |
+| JDBC metadata (DBeaver / DataGrip) | Arrow Flight SQL JDBC 18.3.0 `DatabaseMetaData` | `jdbc_meta` | `docs/JDBC_METADATA.md` | catalogs/schemas/tables/columns OK, 0 FAIL, 8 GAPs (SqlInfo, typeInfo, keywords) — run 40614144465 | metadata only, no TPC-H |
 | ClickHouse | — | `arrowFlight()` | — | not usable | plain Flight datasets only, no SQL; does not send Bearer |
 
 S3 backends (server data dir): rclone S3 (default), Ceph RGW (`s3_backend=ceph`), LocalStack

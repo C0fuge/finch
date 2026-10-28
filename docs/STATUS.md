@@ -27,7 +27,7 @@
 >   (gizmodata/sqlalchemy-gizmosql-adbc-dialect, superset-sqlalchemy-gizmosql-adbc-dialect, Apache-2.0); run a real
 >   `apache/superset` container: add database, SQL Lab query, one chart via API. Keep the old path as a separate row.
 > - B3. **DONE 2026-10-28** (see Log, `docs/ODBC.md`). Was: **ODBC**: official Apache Arrow Flight SQL ODBC driver; Dremio row kept.
-> - B4. **DBeaver / DataGrip metadata conformance**: a JDBC `DatabaseMetaData` test (catalogs, schemas, tables, columns,
+> - B4. **DONE 2026-10-28** (see Log, `docs/JDBC_METADATA.md`). Was: **DBeaver / DataGrip metadata conformance**: a JDBC `DatabaseMetaData` test (catalogs, schemas, tables, columns,
 >   types, PK/FK empty, SqlInfo) as those tools call it; list gaps as server issues.
 > - B5. **DuckDB as a client** (`adbc` / `adbc_scanner` community extension or Query.Farm `airport`) and **ClickHouse**
 >   (`arrowFlight` table function): add rows; ClickHouse needs the server's plain-Flight command support (server repo,
@@ -42,6 +42,8 @@ CI uses server build **45fc0a9e6e02** (= 775100bf923f + per-query overhead cuts:
    22/22 and timing, record in the Log.
 
 ## Open questions
+
+- JDBC metadata gaps (B4, docs/JDBC_METADATA.md): server should report standard SqlInfo (transactions, group by, joins, isolation...) — the JDBC driver NPEs otherwise —, and fill getTypeInfo/keywords. Maintainer: file as server issues?
 
 - AWS S3 test: please add repo secrets `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_TEST_BUCKET`
   (an IAM user limited to that bucket: s3:ListBucket/GetObject/PutObject/DeleteObject). The run uploads SF1 to prefix
@@ -115,3 +117,4 @@ CI uses server build **45fc0a9e6e02** (= 775100bf923f + per-query overhead cuts:
 - 2026-10-27 (cloud session 29): B1 Metabase DONE. Driver J0hnG4lt/metabase-flightsql-driver (latest release jar) in `metabase/metabase:v0.64.2.9`: add database via API (token auth), metadata sync, TPC-H 22/22 identical (native), MBQL count/filter+sum/group-by equal native SQL, native field filter OK — run 40588680869 (client `metabase` in e2e.yml, `e2e/clients/metabase.py`, `docs/METABASE.md`, CLIENTS row). Pitfalls found: `/plugins` must be writable for the container user (else driver silently not loaded); `/api/dataset` caps at 2000 rows (q16 via CSV export); field filters need an un-aliased table. No driver fork needed. Next: B2 (Superset).
 - 2026-10-27 (cloud session 30): B2 Superset DONE. `apache/superset:6.0.0` + superset-sqlalchemy-gizmosql-adbc-dialect: add database, SQL Lab TPC-H 22/22 identical, dataset + chart-data equal native SQL — run 40602735841 (client `superset` in e2e.yml, `e2e/clients/superset.py`, `e2e/superset/`, `docs/SUPERSET.md`, CLIENTS row). Needs a small dialect patch for two server behaviours (vendor_version `0.0.1` instead of `duckdb ...`; ROLLBACK/BEGIN/COMMIT rejected as non-queries) — see Open questions. Next: B3 (ODBC official driver).
 - 2026-10-28 (cloud session 31): B3 ODBC DONE. Official Apache Arrow Flight SQL ODBC 26.0.0 (el9 RPM from apache.jfrog.io, unpacked with rpm2cpio; extra runtime libs liburiparser1/libre2/libutf8proc via apt + symlinks) + unixODBC + pyodbc: metadata OK, TPC-H 22/22 identical, run 40610392211 together with the Dremio driver (clients `odbc_apache odbc`; probe run 40609911205). Helper workflow `odbc-apache-probe.yml` (dispatch only) lists Arrow packages. Pitfall: dispatched e2e runs get cancelled by a pending push run (concurrency group). Next: B4 (DBeaver/DataGrip metadata conformance).
+- 2026-10-28 (cloud session 32): B4 JDBC metadata DONE. Client `jdbc_meta` (`e2e/jdbc/MetaConformance.java`, driver 18.3.0 from Maven Central, runs with the source launcher): run 40614144465 green, 0 FAIL, 8 GAPs (missing SqlInfo -> driver NPE, empty getTypeInfo/keywords/functions, no remarks); first run 40613669218 failed on the NPE before the check was made per-method. Doc `docs/JDBC_METADATA.md`, CLIENTS row. Next: B5 (DuckDB adbc/airport client + ClickHouse; both previously probed - airport and ClickHouse arrowFlight closed in sessions 5 and 12, so B5 is mostly the `adbc_scanner` community extension; check it).
