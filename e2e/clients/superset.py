@@ -72,8 +72,17 @@ def main():
             time.sleep(3)
     TOKEN = call("/api/v1/security/login", {"username": "admin", "password": "admin", "provider": "db", "refresh": True})["access_token"]
     host, port = FLIGHT.split(":")
-    ftoken = os.environ["FLIGHT_TOKEN"]
-    uri = f"gizmosql://superset:{ftoken}@{host}:{port}"
+    if os.environ.get("FLIGHT_USER"):  # LDAP login over TLS (the container trusts the throwaway cert via SSL_CERT_FILE)
+        bad_uri = f"gizmosql://{os.environ['FLIGHT_BAD_USER']}:{os.environ['FLIGHT_BAD_PASSWORD']}@{host}:{port}?useEncryption=true"
+        try:
+            call("/api/v1/database/test_connection/", {"database_name": "flight-bad", "sqlalchemy_uri": bad_uri})
+            print("LOGIN wrong password: ACCEPTED (unexpected)", flush=True)
+            sys.exit(1)
+        except RuntimeError as e:
+            print("LOGIN wrong password refused:", " ".join(str(e).split())[:300], flush=True)
+        uri = f"gizmosql://{os.environ['FLIGHT_USER']}:{os.environ['FLIGHT_PASSWORD']}@{host}:{port}?useEncryption=true"
+    else:
+        uri = f"gizmosql://superset:{os.environ['FLIGHT_TOKEN']}@{host}:{port}"
     db = call("/api/v1/database/", {"database_name": "flight", "sqlalchemy_uri": uri, "expose_in_sqllab": True})
     dbid = db["id"]
     print("database", dbid, flush=True)

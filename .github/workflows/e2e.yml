@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       clients:
-        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 java_flight java_flight_zstd java_flight_lz4 python_pandas python_polars python_duckdb python_sqlalchemy grafana grafana_gizmosql odbc metabase superset jdbc_meta duckdb_adbc_scanner auth_check; with auth_mode ldap|jwt: python_adbc pyarrow_flight jdbc_meta odbc_apache duckdb_adbc_scanner metabase auth_check)"
+        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 java_flight java_flight_zstd java_flight_lz4 python_pandas python_polars python_duckdb python_sqlalchemy grafana grafana_gizmosql odbc metabase superset jdbc_meta duckdb_adbc_scanner auth_check; with auth_mode ldap|jwt: python_adbc pyarrow_flight jdbc_meta odbc_apache duckdb_adbc_scanner metabase superset auth_check)"
         default: "python_adbc"
       probe:
         description: "grafana/odbc/metabase/superset: run probes instead of TPC-H (any non-empty value)"
@@ -159,7 +159,8 @@ jobs:
                 [ -n "${GRAFANA_PROBE:-}" ] && continue ;;
               superset)
                 docker build -q -t finch-superset -f e2e/superset/Dockerfile e2e/superset
-                docker run -d --name superset --network afe2e -p 127.0.0.1:8088:8088 \
+                SSL_ARGS=(); [ -n "${FLIGHT_TLS_CA:-}" ] && SSL_ARGS=(-v "$FLIGHT_TLS_CA:/certs/ca.crt:ro" -e SSL_CERT_FILE=/certs/ca.crt)
+                docker run -d --name superset --network afe2e -p 127.0.0.1:8088:8088 "${SSL_ARGS[@]}" \
                   -v "$WORK/../e2e/superset/superset_config.py:/app/pythonpath/superset_config.py:ro" \
                   -e SUPERSET_CONFIG_PATH=/app/pythonpath/superset_config.py finch-superset \
                   bash -c "superset db upgrade && superset fab create-admin --username admin --firstname a --lastname b --email a@example.com --password admin && superset init && gunicorn -w 2 -t 900 -b 0.0.0.0:8088 'superset.app:create_app()'" >/dev/null
