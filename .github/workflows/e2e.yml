@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       clients:
-        description: "space-separated clients to run (python_adbc python_pandas python_polars python_duckdb python_sqlalchemy grafana odbc metabase superset)"
+        description: "space-separated clients to run (python_adbc python_pandas python_polars python_duckdb python_sqlalchemy grafana odbc metabase superset jdbc_meta)"
         default: "python_adbc"
       probe:
         description: "grafana/odbc/metabase/superset: run probes instead of TPC-H (any non-empty value)"
@@ -138,6 +138,13 @@ jobs:
                   || rc=1
                 docker logs superset 2>&1 | grep -iE 'flight|exception|error' | cut -c1-300 | sort | uniq -c | sort -rn | head -15
                 [ -n "${GRAFANA_PROBE:-}" ] && continue ;;
+              jdbc_meta)
+                mkdir -p "$WORK/jdbc" "$WORK/out/$c"
+                curl -sSL -o "$WORK/jdbc/driver.jar" \
+                  https://repo1.maven.org/maven2/org/apache/arrow/flight-sql-jdbc-driver/18.3.0/flight-sql-jdbc-driver-18.3.0.jar
+                java --add-opens=java.base/java.nio=ALL-UNNAMED -cp "$WORK/jdbc/driver.jar" e2e/jdbc/MetaConformance.java \
+                  flight1:32010 "$WORK/out/$c/report.txt" || rc=1
+                continue ;;
               clickhouse_probe)
                 . "$WORK/env.sh"
                 docker pull -q clickhouse/clickhouse-server:latest >/dev/null
