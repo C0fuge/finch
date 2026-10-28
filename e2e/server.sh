@@ -90,7 +90,7 @@ start() {
   if [ "$AUTH_MODE" = ldap ]; then  # public test image: users like fry/fry, admin bind DN, plaintext port 10389
     docker run -d --name ldap --network $NET ghcr.io/rroemhild/docker-test-openldap:master >/dev/null
     for _ in $(seq 1 60); do docker logs ldap 2>&1 | grep -q 'slapd starting' && break; sleep 2; done
-    authenv=(-e FLIGHT_AUTH_PROVIDER=ldap -e FLIGHT_LDAP_URL=ldap://ldap:10389 -e FLIGHT_LDAP_ALLOW_PLAINTEXT=true
+    authenv=(-e FLIGHT_AUTH_PROVIDER=ldap -e FLIGHT_LDAP_URL=ldap://ldap:10389 -e FLIGHT_LDAP_ALLOW_PLAINTEXT=true -e FLIGHT_LDAP_SESSION_SECRET="$(openssl rand -base64 48)"
       -e FLIGHT_LDAP_BIND_DN=cn=admin,dc=planetexpress,dc=com -e FLIGHT_LDAP_BIND_PASSWORD=GoodNewsEveryone
       -e FLIGHT_LDAP_USER_SEARCH_BASE=ou=people,dc=planetexpress,dc=com -e "FLIGHT_LDAP_USER_SEARCH_FILTER=(uid={0})")
   elif [ "$AUTH_MODE" = jwt ]; then
