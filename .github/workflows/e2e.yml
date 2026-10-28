@@ -88,6 +88,18 @@ jobs:
                 pip install -q pyodbc
                 ODBC_PROBE=${GRAFANA_PROBE:-} python e2e/clients/odbc.py e2e/queries "$WORK/out/$c" \
                   || { rc=1; continue; } ;;
+              odbc_apache)
+                sudo apt-get install -qq -y unixodbc rpm2cpio cpio >/dev/null
+                mkdir -p "$WORK/odbca" && curl -sSL -o "$WORK/odbca/d.rpm" \
+                  https://apache.jfrog.io/artifactory/arrow/almalinux/9/x86_64/Packages/arrow2600-flight-sql-odbc-libs-26.0.0-1.el9.x86_64.rpm
+                (cd "$WORK/odbca" && rpm2cpio d.rpm | cpio -idm 2>/dev/null; find . -type f | head -30)
+                lib=$(find "$WORK/odbca" -name '*odbc*.so*' -type f | head -1)
+                echo "lib=$lib"; ldd "$lib" | grep -i 'not found' || true
+                printf '[Apache Arrow Flight SQL ODBC Driver]\nDriver=%s\n' "$lib" > "$WORK/odbca/odbcinst.ini"
+                export ODBCSYSINI="$WORK/odbca" ODBCINSTINI=odbcinst.ini ODBC_DRIVER="Apache Arrow Flight SQL ODBC Driver"
+                pip install -q pyodbc
+                ODBC_PROBE=${GRAFANA_PROBE:-} python e2e/clients/odbc.py e2e/queries "$WORK/out/$c" \
+                  || { rc=1; continue; } ;;
               metabase)
                 mkdir -p "$WORK/mb/plugins"
                 curl -sSL -o "$WORK/mb/plugins/arrow-flight-sql.metabase-driver.jar" \
