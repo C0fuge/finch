@@ -19,6 +19,10 @@
 
 ## Next steps (one per session; small and finished)
 
+> **Server build `server-1.0.0-a9e43ca5e296` is in the assets** (2026-10-28, local coordinator; jar, plugins tar, libs tar +
+> merged `SHA256SUMS` in `e2e-assets`; same DuckDB 1.5.6 extension set). The LDAP/JWT providers for C1 are the server
+> release asset `flight-auth-...tar.zst`, not in `e2e-assets`.
+
 > **Maintainer, 2026-10-28 14:30: next client pack (C1-C6), take in order.** A new server build `a9e43ca5e296` is being
 > uploaded to the assets (adds LDAP/AD and JWT login, Hive ORC and text tables, size-aware DuckDB threads/memory, opt-in
 > distributed complete mode); make it the default if the suite is green.
