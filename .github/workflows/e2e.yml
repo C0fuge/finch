@@ -94,8 +94,13 @@ jobs:
                   https://apache.jfrog.io/artifactory/arrow/almalinux/9/x86_64/Packages/arrow2600-flight-sql-odbc-libs-26.0.0-1.el9.x86_64.rpm
                 (cd "$WORK/odbca" && rpm2cpio d.rpm | cpio -idm 2>/dev/null; find . -type f | head -30)
                 lib=$(find "$WORK/odbca" -name '*odbc*.so*' -type f | head -1)
-                sudo apt-get install -qq -y liburiparser1 libutf8proc2 libre2-10 >/dev/null || true
-                mkdir -p "$WORK/odbca/deps"; for l in $(ldconfig -p | awk '/libre2\.so\.10 /{print $NF; exit}'); do ln -sf "$l" "$WORK/odbca/deps/libre2.so.9"; done
+                for p in liburiparser1 libre2-10 $(apt-cache search --names-only '^libutf8proc[0-9]' | awk '{print $1}'); do
+                  sudo apt-get install -qq -y "$p" >/dev/null || echo "apt failed: $p"
+                done
+                mkdir -p "$WORK/odbca/deps"
+                ln -sf "$(ldconfig -p | awk '/libre2\.so\.10 /{print $NF; exit}')" "$WORK/odbca/deps/libre2.so.9"
+                u=$(ldconfig -p | awk '/libutf8proc\.so\.[0-9]+ /{print $NF; exit}'); echo "utf8proc=$u"
+                [ -n "$u" ] && ln -sf "$u" "$WORK/odbca/deps/libutf8proc.so.2"
                 export LD_LIBRARY_PATH="$WORK/odbca/deps${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
                 echo "lib=$lib"; ldd "$lib" | grep -i 'not found' || true
                 printf '[Apache Arrow Flight SQL ODBC Driver]\nDriver=%s\n' "$lib" > "$WORK/odbca/odbcinst.ini"
