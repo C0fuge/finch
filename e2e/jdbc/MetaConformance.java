@@ -9,6 +9,8 @@ import java.util.*;
 public class MetaConformance {
     static final List<String> rows = new ArrayList<>();
     static int fails = 0;
+    static final List<String> pending = new ArrayList<>();
+    static void info(String x) { pending.add(x); }
 
     interface Check { String run() throws Exception; } // returns null = OK, else "GAP: ..." / "FAIL: ..."
 
@@ -17,8 +19,10 @@ public class MetaConformance {
         try { String r = c.run(); res = r == null ? "OK" : r; }
         catch (Throwable t) { res = "FAIL: threw " + t.getClass().getSimpleName() + ": " + String.valueOf(t.getMessage()).replaceAll("\\s+", " "); }
         if (res.startsWith("FAIL")) fails++;
-        String line = String.format("%-4s %-40s %s", res.startsWith("OK") ? "OK" : res.substring(0, 4), name, res.startsWith("OK") ? "" : res.substring(Math.min(6, res.length())));
+        String line = String.format("%-4s %-40s %s", res.startsWith("OK") ? "OK" : res.substring(0, 4), name, res.startsWith("OK") ? "" : res.substring(res.indexOf(": ") + 2));
         rows.add(line.stripTrailing());
+        for (String x : pending) { System.out.println(x); }
+        rows.addAll(pending); pending.clear();
         System.out.println(line.stripTrailing());
     }
 
@@ -36,22 +40,22 @@ public class MetaConformance {
             DatabaseMetaData m = c.getMetaData();
             check("product name/version", () -> {
                 String n = m.getDatabaseProductName(), v = m.getDatabaseProductVersion();
-                rows.add("     info: product=" + n + " " + v + " driver=" + m.getDriverName() + " " + m.getDriverVersion()
+                info("     info: product=" + n + " " + v + " driver=" + m.getDriverName() + " " + m.getDriverVersion()
                     + " jdbc=" + m.getJDBCMajorVersion() + "." + m.getJDBCMinorVersion());
                 return n == null || n.isEmpty() ? "GAP: empty product name" : null; });
             check("getCatalogs", () -> {
-                var l = rs(m.getCatalogs(), "TABLE_CAT"); rows.add("     catalogs=" + l); return null; });
+                var l = rs(m.getCatalogs(), "TABLE_CAT"); info("     catalogs=" + l); return null; });
             check("getSchemas lists tpch", () -> {
-                var l = rs(m.getSchemas(), "TABLE_SCHEM"); rows.add("     schemas=" + l);
+                var l = rs(m.getSchemas(), "TABLE_SCHEM"); info("     schemas=" + l);
                 return l.stream().anyMatch(x -> "tpch".equals(x.get(0))) ? null : "FAIL: no schema tpch in " + l; });
             check("getSchemas(null,'tp%')", () -> {
                 var l = rs(m.getSchemas(null, "tp%"), "TABLE_SCHEM"); return l.size() >= 1 ? null : "GAP: schema pattern ignored/empty"; });
             check("getTableTypes", () -> {
-                var l = rs(m.getTableTypes(), "TABLE_TYPE"); rows.add("     tableTypes=" + l); return l.isEmpty() ? "GAP: empty" : null; });
+                var l = rs(m.getTableTypes(), "TABLE_TYPE"); info("     tableTypes=" + l); return l.isEmpty() ? "GAP: empty" : null; });
             check("getTables(tpch, all types)", () -> {
                 var l = rs(m.getTables(null, "tpch", "%", null), "TABLE_NAME", "TABLE_TYPE");
                 Set<String> got = new TreeSet<>(); for (var r : l) got.add(r.get(0));
-                rows.add("     tables=" + l);
+                info("     tables=" + l);
                 return got.containsAll(Arrays.asList(tpch)) ? null : "FAIL: missing tables, got " + got; });
             check("getTables(types=TABLE)", () -> {
                 var l = rs(m.getTables(null, "tpch", "%", new String[]{"TABLE"}), "TABLE_NAME");
@@ -62,11 +66,11 @@ public class MetaConformance {
             check("getTables TABLE_CAT/SCHEM/REMARKS", () -> {
                 try (ResultSet r = m.getTables(null, "tpch", "region", null)) {
                     if (!r.next()) return "FAIL: region not found";
-                    rows.add("     region: cat=" + r.getString("TABLE_CAT") + " schem=" + r.getString("TABLE_SCHEM") + " type=" + r.getString("TABLE_TYPE") + " remarks=" + r.getString("REMARKS"));
+                    info("     region: cat=" + r.getString("TABLE_CAT") + " schem=" + r.getString("TABLE_SCHEM") + " type=" + r.getString("TABLE_TYPE") + " remarks=" + r.getString("REMARKS"));
                     return r.getString("TABLE_SCHEM") == null ? "GAP: TABLE_SCHEM null" : null; } });
             check("getColumns(lineitem) names+order", () -> {
                 var l = rs(m.getColumns(null, "tpch", "lineitem", "%"), "COLUMN_NAME", "TYPE_NAME", "DATA_TYPE", "ORDINAL_POSITION", "NULLABLE", "COLUMN_SIZE", "DECIMAL_DIGITS");
-                for (var r : l) rows.add("     lineitem." + r);
+                for (var r : l) info("     lineitem." + r);
                 if (l.size() != 16) return "FAIL: " + l.size() + " columns, expected 16";
                 String first = l.get(0).get(0), last = l.get(15).get(0);
                 if (!"l_orderkey".equals(first) || !"l_comment".equals(last)) return "FAIL: order " + first + ".." + last;
@@ -78,7 +82,7 @@ public class MetaConformance {
             check("getColumns types (decimal/date)", () -> {
                 Map<String, String> t = new HashMap<>();
                 for (var r : rs(m.getColumns(null, "tpch", "lineitem", "%"), "COLUMN_NAME", "TYPE_NAME", "DATA_TYPE")) t.put(r.get(0), r.get(1) + "/" + r.get(2));
-                rows.add("     l_quantity=" + t.get("l_quantity") + " l_shipdate=" + t.get("l_shipdate") + " l_orderkey=" + t.get("l_orderkey") + " l_comment=" + t.get("l_comment"));
+                info("     l_quantity=" + t.get("l_quantity") + " l_shipdate=" + t.get("l_shipdate") + " l_orderkey=" + t.get("l_orderkey") + " l_comment=" + t.get("l_comment"));
                 String d = t.get("l_shipdate"), q = t.get("l_quantity");
                 if (d == null || !(d.contains("DATE") || d.contains("date") || d.endsWith("/91"))) return "GAP: l_shipdate type " + d;
                 if (q == null || !(q.toUpperCase().contains("DEC") || q.endsWith("/3") || q.endsWith("/2"))) return "GAP: l_quantity type " + q;
@@ -95,22 +99,40 @@ public class MetaConformance {
             check("getIndexInfo(region)", () -> {
                 try (ResultSet r = m.getIndexInfo(null, "tpch", "region", false, true)) { int n = 0; while (r.next()) n++; return n == 0 ? null : "GAP: " + n + " rows"; } });
             check("getTypeInfo", () -> {
-                int n = 0; try (ResultSet r = m.getTypeInfo()) { while (r.next()) n++; } rows.add("     typeInfo rows=" + n); return n > 0 ? null : "GAP: empty"; });
+                int n = 0; try (ResultSet r = m.getTypeInfo()) { while (r.next()) n++; } info("     typeInfo rows=" + n); return n > 0 ? null : "GAP: empty"; });
             check("getProcedures", () -> { try (ResultSet r = m.getProcedures(null, null, "%")) { return null; } });
             check("getFunctions", () -> { try (ResultSet r = m.getFunctions(null, null, "%")) { return null; } });
-            check("getSQLKeywords", () -> { String k = m.getSQLKeywords(); rows.add("     keywords.length=" + (k == null ? -1 : k.length())); return k == null || k.isEmpty() ? "GAP: empty (editor highlighting/completion)" : null; });
-            check("getIdentifierQuoteString", () -> { String q = m.getIdentifierQuoteString(); rows.add("     quote='" + q + "'"); return "\"".equals(q) ? null : "GAP: quote '" + q + "'"; });
-            check("getSearchStringEscape", () -> { rows.add("     escape='" + m.getSearchStringEscape() + "'"); return null; });
-            check("getStringFunctions/Numeric/Time", () -> { rows.add("     fn lengths " + m.getStringFunctions().length() + "/" + m.getNumericFunctions().length() + "/" + m.getTimeDateFunctions().length() + "/" + m.getSystemFunctions().length()); return null; });
-            check("supports* (SqlInfo)", () -> {
-                rows.add("     supportsTransactions=" + m.supportsTransactions() + " supportsBatch=" + m.supportsBatchUpdates() + " supportsSchemasInDML=" + m.supportsSchemasInDataManipulation()
-                    + " supportsCatalogsInDML=" + m.supportsCatalogsInDataManipulation() + " supportsGroupBy=" + m.supportsGroupBy() + " supportsOuterJoins=" + m.supportsOuterJoins()
-                    + " supportsSubqueriesInExists=" + m.supportsSubqueriesInExists() + " supportsUnion=" + m.supportsUnion() + " isReadOnly=" + m.isReadOnly()
-                    + " storesLowerCase=" + m.storesLowerCaseIdentifiers() + " storesMixed=" + m.storesMixedCaseIdentifiers() + " nullsSortedHigh=" + m.nullsAreSortedHigh()
-                    + " maxCols=" + m.getMaxColumnsInTable() + " defaultTxn=" + m.getDefaultTransactionIsolation());
-                return null; });
-            check("getURL/getUserName", () -> { rows.add("     user=" + m.getUserName()); return null; });
-            check("connection.getCatalog/getSchema", () -> { rows.add("     catalog=" + c.getCatalog() + " schema=" + c.getSchema()); return null; });
+            check("getSQLKeywords", () -> { String k = m.getSQLKeywords(); info("     keywords.length=" + (k == null ? -1 : k.length())); return k == null || k.isEmpty() ? "GAP: empty (editor highlighting/completion)" : null; });
+            check("getIdentifierQuoteString", () -> { String q = m.getIdentifierQuoteString(); info("     quote='" + q + "'"); return "\"".equals(q) ? null : "GAP: quote '" + q + "'"; });
+            check("getSearchStringEscape", () -> { info("     escape='" + m.getSearchStringEscape() + "'"); return null; });
+            check("getStringFunctions/Numeric/Time", () -> { info("     fn lengths " + m.getStringFunctions().length() + "/" + m.getNumericFunctions().length() + "/" + m.getTimeDateFunctions().length() + "/" + m.getSystemFunctions().length()); return null; });
+            Map<String, Check> sq = new LinkedHashMap<>();
+            sq.put("supportsTransactions", () -> "" + m.supportsTransactions());
+            sq.put("supportsBatchUpdates", () -> "" + m.supportsBatchUpdates());
+            sq.put("supportsSchemasInDataManipulation", () -> "" + m.supportsSchemasInDataManipulation());
+            sq.put("supportsCatalogsInDataManipulation", () -> "" + m.supportsCatalogsInDataManipulation());
+            sq.put("supportsGroupBy", () -> "" + m.supportsGroupBy());
+            sq.put("supportsOuterJoins", () -> "" + m.supportsOuterJoins());
+            sq.put("supportsSubqueriesInExists", () -> "" + m.supportsSubqueriesInExists());
+            sq.put("supportsUnion", () -> "" + m.supportsUnion());
+            sq.put("isReadOnly", () -> "" + m.isReadOnly());
+            sq.put("storesLowerCaseIdentifiers", () -> "" + m.storesLowerCaseIdentifiers());
+            sq.put("storesMixedCaseIdentifiers", () -> "" + m.storesMixedCaseIdentifiers());
+            sq.put("nullsAreSortedHigh", () -> "" + m.nullsAreSortedHigh());
+            sq.put("supportsMixedCaseIdentifiers", () -> "" + m.supportsMixedCaseIdentifiers());
+            sq.put("getMaxColumnsInTable", () -> "" + m.getMaxColumnsInTable());
+            sq.put("getDefaultTransactionIsolation", () -> "" + m.getDefaultTransactionIsolation());
+            sq.put("supportsSelectForUpdate", () -> "" + m.supportsSelectForUpdate());
+            sq.put("supportsStoredProcedures", () -> "" + m.supportsStoredProcedures());
+            sq.put("supportsResultSetType(FORWARD_ONLY)", () -> "" + m.supportsResultSetType(ResultSet.TYPE_FORWARD_ONLY));
+            for (var e : sq.entrySet()) {
+                check("SqlInfo " + e.getKey(), () -> {
+                    try { info("     " + e.getKey() + "=" + e.getValue().run()); return null; }
+                    catch (NullPointerException | UnsupportedOperationException | SQLException x) { return "GAP: " + x.getClass().getSimpleName() + " (server does not report this SqlInfo)"; }
+                });
+            }
+            check("getURL/getUserName", () -> { info("     user=" + m.getUserName()); return null; });
+            check("connection.getCatalog/getSchema", () -> { info("     catalog=" + c.getCatalog() + " schema=" + c.getSchema()); return null; });
             check("ResultSetMetaData of SELECT", () -> {
                 try (Statement s = c.createStatement(); ResultSet r = s.executeQuery("select * from tpch.lineitem limit 1")) {
                     ResultSetMetaData md = r.getMetaData();
@@ -118,7 +140,7 @@ public class MetaConformance {
                     for (int i = 1; i <= md.getColumnCount(); i++) sb.append(md.getColumnName(i)).append(':').append(md.getColumnTypeName(i)).append(' ');
                     rows.add(sb.toString().stripTrailing());
                     return md.getColumnCount() == 16 ? null : "FAIL: " + md.getColumnCount() + " columns"; } });
-            check("read-only/autocommit/valid", () -> { rows.add("     autocommit=" + c.getAutoCommit() + " readOnly=" + c.isReadOnly() + " valid=" + c.isValid(5)); return c.isValid(5) ? null : "GAP: isValid false"; });
+            check("read-only/autocommit/valid", () -> { info("     autocommit=" + c.getAutoCommit() + " readOnly=" + c.isReadOnly() + " valid=" + c.isValid(5)); return c.isValid(5) ? null : "GAP: isValid false"; });
             check("PreparedStatement parameter metadata", () -> {
                 try (PreparedStatement p = c.prepareStatement("select * from tpch.region where r_regionkey = ?")) {
                     p.setInt(1, 1);
