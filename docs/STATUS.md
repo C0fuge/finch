@@ -19,6 +19,10 @@
 
 ## Next steps (one per session; small and finished)
 
+> **Maintainer, 2026-10-28 15:00 - native first.** For every tool, prefer and test its native Arrow Flight / ADBC path
+> over JDBC/ODBC; where a tool has both, add a speed row (same query set: TPC-H SF1 total and a 1M-row export) native vs
+> JDBC so the gain is visible. Mark JDBC-only tools as such in the README matrix.
+
 > **Server build `server-1.0.0-a9e43ca5e296` is in the assets** (2026-10-28, local coordinator; jar, plugins tar, libs tar +
 > merged `SHA256SUMS` in `e2e-assets`; same DuckDB 1.5.6 extension set). The LDAP/JWT providers for C1 are the server
 > release asset `flight-auth-...tar.zst`, not in `e2e-assets`.
