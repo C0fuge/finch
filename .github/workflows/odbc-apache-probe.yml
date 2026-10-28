@@ -1,0 +1,17 @@
+name: odbc-apache-probe
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Look for the Apache Arrow Flight SQL ODBC driver packages
+        run: |
+          for u in https://apache.jfrog.io/artifactory/arrow/almalinux/9/x86_64/Packages/ \
+                   https://apache.jfrog.io/artifactory/arrow/almalinux/8/x86_64/Packages/ \
+                   https://apache.jfrog.io/artifactory/arrow/ubuntu/pool/noble/main/a/apache-arrow/ \
+                   https://apache.jfrog.io/artifactory/arrow/debian/pool/trixie/main/a/apache-arrow/ \
+                   https://downloads.apache.org/arrow/ ; do
+            echo "== $u"
+            curl -sS -m 60 "$u" | grep -oiE 'href="[^"]*(odbc|flight-sql)[^"]*"' | sort -u | head -40
+          done
+          curl -sS -m 60 https://downloads.apache.org/arrow/ | grep -oE 'arrow-[0-9.]+/' | sort -uV | tail -5
