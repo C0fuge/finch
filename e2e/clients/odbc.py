@@ -2,7 +2,7 @@
 """ODBC route (Tableau / Power BI / Excel): Dremio Arrow Flight SQL ODBC driver (Linux RPM) via unixODBC + pyodbc.
 
     odbc.py <queries-dir> <out-dir>
-    env: FLIGHT_URI (grpc://host:port), FLIGHT_TOKEN, ODBC_DRIVER (name in odbcinst.ini), ODBC_PROBE (non-empty: metadata only)
+    env (LDAP mode: FLIGHT_USER/FLIGHT_PASSWORD/FLIGHT_BAD_*/FLIGHT_TLS_CA instead of FLIGHT_TOKEN): FLIGHT_URI (grpc://host:port), FLIGHT_TOKEN, ODBC_DRIVER (name in odbcinst.ini), ODBC_PROBE (non-empty: metadata only)
 """
 import datetime
 import decimal
@@ -23,8 +23,19 @@ def main():
     qdir, out = sys.argv[1:3]
     os.makedirs(out, exist_ok=True)
     host, port = os.environ["FLIGHT_URI"].split("//")[1].split(":")
-    cs = (f"Driver={{{os.environ.get('ODBC_DRIVER', 'Arrow Flight SQL ODBC Driver')}}};Host={host};Port={port};"
-          f"useEncryption=false;Token={os.environ['FLIGHT_TOKEN']}")
+    base = f"Driver={{{os.environ.get('ODBC_DRIVER', 'Arrow Flight SQL ODBC Driver')}}};Host={host};Port={port};"
+    if os.environ.get("FLIGHT_USER"):  # LDAP login over TLS, trusting the throwaway server cert
+        tls = f"useEncryption=true;disableCertificateVerification=false;trustedCerts={os.environ['FLIGHT_TLS_CA']};"
+        bad = base + tls + f"UID={os.environ['FLIGHT_BAD_USER']};PWD={os.environ['FLIGHT_BAD_PASSWORD']}"
+        try:
+            pyodbc.connect(bad, autocommit=True).cursor().execute("SELECT 1").fetchall()
+            print("LOGIN wrong password: ACCEPTED (FAIL)")
+            sys.exit(1)
+        except pyodbc.Error as e:
+            print("LOGIN wrong password: refused OK:", " ".join(str(e).split())[:200])
+        cs = base + tls + f"UID={os.environ['FLIGHT_USER']};PWD={os.environ['FLIGHT_PASSWORD']}"
+    else:
+        cs = base + f"useEncryption=false;Token={os.environ['FLIGHT_TOKEN']}"
     print("drivers:", pyodbc.drivers())
     conn = pyodbc.connect(cs, autocommit=True)
     print("connected:", conn.getinfo(pyodbc.SQL_DBMS_NAME), conn.getinfo(pyodbc.SQL_DBMS_VER))
