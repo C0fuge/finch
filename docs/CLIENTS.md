@@ -13,6 +13,7 @@ below use `complete`.
 | Client | Install | Connection | Auth | CI (TPC-H) | Notes |
 |---|---|---|---|---|---|
 | Python ADBC | `pip install adbc-driver-flightsql pyarrow` | `grpc://host:32010` | header `authorization: Bearer <t>` | 22/22 | `e2e/clients/python_adbc.py` |
+| Java Flight SQL (FlightSqlClient; plain, zstd, lz4) | Maven `flight-sql` 18.3.0 + `arrow-compression`, zstd-jni, commons-compress | `grpc://host:32010` | header `authorization: Bearer <t>`, optional `arrow-compression` | 22/22 each | `e2e/java-flight/JavaFlight.java` |
 | pandas | + `pandas` | `read_sql` over ADBC DBAPI | as ADBC | 22/22 | `e2e/clients/python_df.py` |
 | polars | + `polars` | `read_database` over ADBC | as ADBC | 22/22 | same script |
 | DuckDB | + `duckdb<2` | ADBC Arrow table scanned by DuckDB | as ADBC | 22/22 | `airport` extension does NOT work (needs its own Flight actions) |
