@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """ADBC Flight SQL client: run the TPC-H queries, write TSV answers for e2e/compare.py.
 
-    python_adbc.py <queries-dir> <out-dir>      env: FLIGHT_URI, FLIGHT_TOKEN, TABLE_PREFIX (default 'tpch.')
+    python_adbc.py <queries-dir> <out-dir>      env: FLIGHT_URI, FLIGHT_TOKEN, TABLE_PREFIX (default 'tpch.'),
+    FLIGHT_COMPRESSION (optional: zstd|lz4 -> call header 'arrow-compression')
 """
 import os
 import re
@@ -20,10 +21,10 @@ def main():
     qdir, out = sys.argv[1:3]
     prefix = os.environ.get("TABLE_PREFIX", "tpch.")
     os.makedirs(out, exist_ok=True)
-    conn = flight.connect(
-        os.environ["FLIGHT_URI"],
-        db_kwargs={DatabaseOptions.AUTHORIZATION_HEADER.value: "Bearer " + os.environ["FLIGHT_TOKEN"]},
-    )
+    kw = {DatabaseOptions.AUTHORIZATION_HEADER.value: "Bearer " + os.environ["FLIGHT_TOKEN"]}
+    if os.environ.get("FLIGHT_COMPRESSION"):
+        kw["adbc.flight.sql.rpc.call_header.arrow-compression"] = os.environ["FLIGHT_COMPRESSION"]
+    conn = flight.connect(os.environ["FLIGHT_URI"], db_kwargs=kw)
     for name in sorted(f[:-4] for f in os.listdir(qdir) if f.endswith(".sql")):
         sql = open(os.path.join(qdir, name + ".sql"), encoding="utf-8").read()
         sql = re.sub(r"\b(from|join)\s+(" + "|".join(TABLES) + r")\b", lambda m: f"{m[1]} {prefix}{m[2]}", sql, flags=re.I)
