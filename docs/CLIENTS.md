@@ -17,6 +17,7 @@ below use `complete`.
 | pandas | + `pandas` | `read_sql` over ADBC DBAPI | as ADBC | 22/22 | `e2e/clients/python_df.py` |
 | polars | + `polars` | `read_database` over ADBC | as ADBC | 22/22 | same script |
 | DuckDB | + `duckdb<2` | ADBC Arrow table scanned by DuckDB | as ADBC | 22/22 | `airport` extension does NOT work (needs its own Flight actions) |
+| DuckDB `adbc_scanner` (community ext.) | `duckdb<2`, `adbc-driver-flightsql` (driver .so) | `ATTACH '<uri>' AS fl (TYPE adbc, driver '<libadbc_driver_flightsql.so>', "adbc.flight.sql.authorization_header" 'Bearer <token>')` then `adbc_scan('fl', '<sql>')` | complete | 22/22 (run 40663958686) | needs DuckDB 1.x (2.0 loads it from the Query.Farm repo, untested); see docs/DUCKDB_ADBC.md |
 | SQLAlchemy / Superset | `pip install flightsql-dbapi "sqlalchemy<2"` | `datafusion+flightsql://host:32010?insecure=true&token=<t>` | `token=` in URI | 22/22 + reflection | `import flightsql.sqlalchemy`; Superset itself not run in CI |
 | Superset (ADBC dialect) | `superset-sqlalchemy-gizmosql-adbc-dialect` in `apache/superset:6.0.0` | `gizmosql://user:<t>@host:32010` | basic auth (token as password) | 22/22 + dataset/chart | needs dialect patch for 2 server behaviours, see docs/SUPERSET.md |
 | Grafana | plugin `influxdata-flightsql-datasource` (11.3.0) | host:32010, token auth | token | 22/22 | DECIMAL/DATE/HUGEINT arrive empty: cast in the query; see `GRAFANA.md` |
