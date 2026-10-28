@@ -37,28 +37,34 @@ def main():
     auth = "Bearer " + os.environ["FLIGHT_TOKEN"]
     key = "adbc.flight.sql.authorization_header"
     forms = [
-        "{'driver': '%s', 'uri': '%s', '%s': '%s'}" % (drv, uri, key, auth),
-        "{'driver': '%s', 'uri': '%s', 'options': {'%s': '%s'}}" % (drv, uri, key, auth),
-        "MAP {'driver': '%s', 'uri': '%s', '%s': '%s'}" % (drv, uri, key, auth),
-        "'driver=%s;uri=%s;%s=%s'" % (drv, uri, key, auth),
-        "'%s'" % uri,
+        "(TYPE adbc, driver '%s', \"%s\" '%s')" % (drv, key, auth),
+        "(TYPE adbc, driver '%s', headers '%s')" % (drv, auth),
+        "(TYPE adbc, driver '%s', authorization_header '%s')" % (drv, auth),
+        "(TYPE adbc, driver '%s', token '%s')" % (drv, os.environ["FLIGHT_TOKEN"]),
+        "(TYPE adbc, driver '%s', username 'u', password '%s')" % (drv, os.environ["FLIGHT_TOKEN"]),
     ]
     db = None
     for f in forms:
         try:
-            r = con.execute("SELECT * FROM adbc_scan(%s, 'SELECT 1 AS x')" % f).fetchall()
-            print("FORM OK:", f.replace(auth, "***")[:120], r)
+            con.execute("ATTACH '%s' AS fl %s" % (uri, f))
+            r = con.execute("SELECT * FROM adbc_scan('fl', 'SELECT 1 AS x')").fetchall()
+            print("FORM OK:", f.replace(auth, "***").replace(os.environ["FLIGHT_TOKEN"], "***")[:120], r)
             db = f
             break
         except Exception as e:  # noqa: BLE001
-            print("FORM FAIL:", f.replace(auth, "***")[:80], "->", " ".join(str(e).split())[:300].replace(auth, "***"))
+            m = " ".join(str(e).split()).replace(auth, "***").replace(os.environ["FLIGHT_TOKEN"], "***")
+            print("FORM FAIL:", f.replace(auth, "***").replace(os.environ["FLIGHT_TOKEN"], "***")[-60:], "->", m[:350])
+            try:
+                con.execute("DETACH fl")
+            except Exception:  # noqa: BLE001
+                pass
     if db is None:
         sys.exit(1)
     for name in sorted(f[:-4] for f in os.listdir(qdir) if f.endswith(".sql")):
         sql = open(os.path.join(qdir, name + ".sql"), encoding="utf-8").read().strip().rstrip(";")
         try:
             lit = "'" + sql.replace("'", "''") + "'"
-            rows = con.execute("SELECT * FROM adbc_scan(%s, %s)" % (db, lit)).fetchall()
+            rows = con.execute("SELECT * FROM adbc_scan('fl', %s)" % lit).fetchall()
             with open(os.path.join(out, name + ".tsv"), "w", encoding="utf-8") as f:
                 for r in rows:
                     f.write("\t".join(cell(v) for v in r) + "\n")
