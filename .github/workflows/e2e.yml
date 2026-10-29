@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       clients:
-        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 java_flight java_flight_zstd java_flight_lz4 go_adbc go_adbc_zstd go_adbc_lz4 rust_flight r_adbc dotnet_flight python_pandas python_polars python_duckdb python_sqlalchemy grafana grafana_gizmosql odbc metabase superset jdbc_meta duckdb_adbc_scanner auth_check; with auth_mode ldap|jwt: grafana_gizmosql python_adbc pyarrow_flight jdbc_meta odbc_apache duckdb_adbc_scanner metabase superset auth_check)"
+        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 java_flight java_flight_zstd java_flight_lz4 go_adbc go_adbc_zstd go_adbc_lz4 rust_flight r_adbc dotnet_flight node_flight python_pandas python_polars python_duckdb python_sqlalchemy grafana grafana_gizmosql odbc metabase superset jdbc_meta duckdb_adbc_scanner auth_check; with auth_mode ldap|jwt: grafana_gizmosql python_adbc pyarrow_flight jdbc_meta odbc_apache duckdb_adbc_scanner metabase superset auth_check)"
         default: "python_adbc"
       probe:
         description: "grafana/odbc/metabase/superset: run probes instead of TPC-H (any non-empty value)"
@@ -94,6 +94,9 @@ jobs:
               dotnet_flight)
                 (cd e2e/dotnet-flight && dotnet publish -c Release -o "$WORK/dotnet-flight" -v q --nologo)
                 "$WORK/dotnet-flight/dotnet-flight" e2e/queries "$WORK/out/$c" flight1:32010 ;;
+              node_flight)
+                (cd e2e/node-flight && npm install --no-audit --no-fund --silent)
+                node e2e/node-flight/node_flight.mjs e2e/queries "$WORK/out/$c" flight1:32010 ;;
               r_adbc)
                 sudo apt-get install -y -qq r-base-core >/dev/null
                 sudo mkdir -p /usr/local/lib/R/site-library && sudo chmod a+w /usr/local/lib/R/site-library

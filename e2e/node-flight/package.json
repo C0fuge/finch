@@ -1,0 +1,8 @@
+{
+  "name": "node-flight",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@firetiger-oss/flight-sql-client": "1.1.1"
+  }
+}
