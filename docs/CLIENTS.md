@@ -15,6 +15,7 @@ below use `complete`.
 | Python ADBC | `pip install adbc-driver-flightsql pyarrow` | `grpc://host:32010` | header `authorization: Bearer <t>` | 22/22 | `e2e/clients/python_adbc.py` |
 | Java Flight SQL (FlightSqlClient; plain, zstd, lz4) | Maven `flight-sql` 18.3.0 + `arrow-compression`, zstd-jni, commons-compress | `grpc://host:32010` | header `authorization: Bearer <t>`, optional `arrow-compression` | 22/22 each | `e2e/java-flight/JavaFlight.java` |
 | Go ADBC Flight SQL (native driver `arrow-adbc/go/adbc` 1.8.0; plain, zstd, lz4) | Go module `e2e/go-adbc` (driver package was dropped from `go/adbc` >= 1.9) | `grpc+tcp://host:32010` | `adbc.flight.sql.authorization_header` = `Bearer <t>`, optional call header `arrow-compression` | 22/22 each (run 40806851384) | `e2e/go-adbc/main.go` |
+| Rust Flight SQL (native `arrow-flight` crate 56, `FlightSqlServiceClient`) | Cargo project `e2e/rust-flight` | `http://host:32010` | bearer token via `set_token` | 22/22 (run 40810992611) | `e2e/rust-flight/src/main.rs` |
 | pandas | + `pandas` | `read_sql` over ADBC DBAPI | as ADBC | 22/22 | `e2e/clients/python_df.py` |
 | polars | + `polars` | `read_database` over ADBC | as ADBC | 22/22 | same script |
 | DuckDB | + `duckdb<2` | ADBC Arrow table scanned by DuckDB | as ADBC | 22/22 | `airport` extension does NOT work (needs its own Flight actions) |
