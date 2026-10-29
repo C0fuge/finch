@@ -36,12 +36,13 @@ function cell(v, field) {
 }
 
 const client = new FlightSQLClient({ host, port: Number(port), plaintext: true, ...(token ? { token } : {}) });
+await client.connect();
 for (const f of fs.readdirSync(qdir).filter((x) => x.endsWith(".sql")).sort()) {
   const name = f.slice(0, -4);
   let sql = fs.readFileSync(path.join(qdir, f), "utf8");
   sql = sql.replace(re1, (_, a, t) => `${a} ${prefix}${t}`).replace(re2, (_, t) => `, ${prefix}${t}`);
   try {
-    const table = await client.executeQuery(sql);
+    const table = await client.execute(sql);
     const fields = table.schema.fields;
     const lines = [];
     for (let r = 0; r < table.numRows; r++)
