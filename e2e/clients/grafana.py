@@ -82,11 +82,11 @@ def main():
     if GIZMO and os.environ.get("FLIGHT_USER"):  # LDAP login over TLS (container trusts the throwaway cert via SSL_CERT_FILE)
         host, port = FLIGHT.rsplit(":", 1)
 
-        def mk(user, pw):
-            return {"name": "flight-" + user, "type": "gizmodata-gizmosql-datasource", "access": "proxy",
+        def mk(user, pw, name):
+            return {"name": name, "type": "gizmodata-gizmosql-datasource", "access": "proxy",
                     "jsonData": {"host": host, "port": int(port), "useTLS": True, "username": user},
                     "secureJsonData": {"password": pw}}
-        bad = call("/api/datasources", mk(os.environ["FLIGHT_BAD_USER"], os.environ["FLIGHT_BAD_PASSWORD"]))["datasource"]
+        bad = call("/api/datasources", mk(os.environ["FLIGHT_BAD_USER"], os.environ["FLIGHT_BAD_PASSWORD"], "flight-bad"))["datasource"]
         try:
             h = call(f"/api/datasources/uid/{bad['uid']}/health")
         except RuntimeError as e:
@@ -95,7 +95,7 @@ def main():
         if "OK" in json.dumps(h) and "error" not in json.dumps(h).lower():
             print("LOGIN wrong password: ACCEPTED (unexpected)", flush=True)
             sys.exit(1)
-        body = mk(os.environ["FLIGHT_USER"], os.environ["FLIGHT_PASSWORD"])
+        body = mk(os.environ["FLIGHT_USER"], os.environ["FLIGHT_PASSWORD"], "flight")
     elif GIZMO:
         host, port = FLIGHT.rsplit(":", 1)
         body = {"name": "flight", "type": "gizmodata-gizmosql-datasource", "access": "proxy",
