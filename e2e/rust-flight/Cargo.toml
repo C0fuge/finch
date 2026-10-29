@@ -1,0 +1,13 @@
+[package]
+name = "rust-flight"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+arrow-flight = { version = "56", features = ["flight-sql", "tls-ring"] }
+arrow-cast = "56"
+arrow-array = "56"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tonic = "0.13"
+futures = "0.3"
+regex = "1"
