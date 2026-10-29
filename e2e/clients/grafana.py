@@ -79,7 +79,24 @@ def main():
         except Exception:  # noqa: BLE001
             time.sleep(2)
     print("plugins:", [p["id"] for p in call("/api/plugins?type=datasource") if "flight" in p["id"]])
-    if GIZMO:
+    if GIZMO and os.environ.get("FLIGHT_USER"):  # LDAP login over TLS (container trusts the throwaway cert via SSL_CERT_FILE)
+        host, port = FLIGHT.rsplit(":", 1)
+
+        def mk(user, pw):
+            return {"name": "flight-" + user, "type": "gizmodata-gizmosql-datasource", "access": "proxy",
+                    "jsonData": {"host": host, "port": int(port), "useTLS": True, "username": user},
+                    "secureJsonData": {"password": pw}}
+        bad = call("/api/datasources", mk(os.environ["FLIGHT_BAD_USER"], os.environ["FLIGHT_BAD_PASSWORD"]))["datasource"]
+        try:
+            h = call(f"/api/datasources/uid/{bad['uid']}/health")
+        except RuntimeError as e:
+            h = str(e)
+        print("health wrong password:", h, flush=True)
+        if "OK" in json.dumps(h) and "error" not in json.dumps(h).lower():
+            print("LOGIN wrong password: ACCEPTED (unexpected)", flush=True)
+            sys.exit(1)
+        body = mk(os.environ["FLIGHT_USER"], os.environ["FLIGHT_PASSWORD"])
+    elif GIZMO:
         host, port = FLIGHT.rsplit(":", 1)
         body = {"name": "flight", "type": "gizmodata-gizmosql-datasource", "access": "proxy",
                 "jsonData": {"host": host, "port": int(port), "useTLS": False},

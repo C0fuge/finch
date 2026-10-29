@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       clients:
-        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 java_flight java_flight_zstd java_flight_lz4 python_pandas python_polars python_duckdb python_sqlalchemy grafana grafana_gizmosql odbc metabase superset jdbc_meta duckdb_adbc_scanner auth_check; with auth_mode ldap|jwt: python_adbc pyarrow_flight jdbc_meta odbc_apache duckdb_adbc_scanner metabase superset auth_check)"
+        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 java_flight java_flight_zstd java_flight_lz4 python_pandas python_polars python_duckdb python_sqlalchemy grafana grafana_gizmosql odbc metabase superset jdbc_meta duckdb_adbc_scanner auth_check; with auth_mode ldap|jwt: grafana_gizmosql python_adbc pyarrow_flight jdbc_meta odbc_apache duckdb_adbc_scanner metabase superset auth_check)"
         default: "python_adbc"
       probe:
         description: "grafana/odbc/metabase/superset: run probes instead of TPC-H (any non-empty value)"
@@ -104,7 +104,9 @@ jobs:
                 echo "plugin zip: $url"
                 curl -sSL -o "$WORK/gf.zip" "$url" && unzip -q -o "$WORK/gf.zip" -d "$WORK/gfplug" && chmod -R a+rX "$WORK/gfplug"
                 find "$WORK/gfplug" -maxdepth 2 | head -20
-                docker run -d --name grafana_gizmosql --network afe2e -p 127.0.0.1:3000:3000 -v "$WORK/gfplug:/var/lib/grafana/plugins" \
+                grep -ohE '(username|password|useTLS|skipVerify|insecure|tlsCa|caCert|token|authType)[A-Za-z]*' -r "$WORK/gfplug" --include=module.js | sort | uniq -c | sort -rn | head -20 || true
+                SSL_ARGS=(); [ -n "${FLIGHT_TLS_CA:-}" ] && SSL_ARGS=(-v "$FLIGHT_TLS_CA:/certs/ca.crt:ro" -e SSL_CERT_FILE=/certs/ca.crt)
+                docker run -d --name grafana_gizmosql --network afe2e "${SSL_ARGS[@]}" -p 127.0.0.1:3000:3000 -v "$WORK/gfplug:/var/lib/grafana/plugins" \
                   -e GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=gizmodata-gizmosql-datasource grafana/grafana-oss:11.3.0 >/dev/null
                 GRAFANA_PLUGIN=gizmosql GRAFANA_PROBE=${GRAFANA_PROBE:-} python e2e/clients/grafana.py http://localhost:3000 flight1:32010 e2e/queries "$WORK/out/$c" \
                   || rc=1
