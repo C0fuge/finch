@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       clients:
-        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 java_flight java_flight_zstd java_flight_lz4 go_adbc go_adbc_zstd go_adbc_lz4 rust_flight r_adbc dotnet_flight node_flight python_pandas python_polars python_duckdb python_sqlalchemy jupyter_smoke grafana grafana_gizmosql odbc metabase superset jdbc_meta duckdb_adbc_scanner auth_check; with auth_mode ldap|jwt: grafana_gizmosql python_adbc pyarrow_flight jdbc_meta odbc_apache duckdb_adbc_scanner metabase superset auth_check)"
+        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 java_flight java_flight_zstd java_flight_lz4 go_adbc go_adbc_zstd go_adbc_lz4 rust_flight r_adbc dotnet_flight node_flight python_pandas python_polars python_duckdb python_sqlalchemy jupyter_smoke grafana grafana_gizmosql odbc metabase superset jdbc_meta duckdb_adbc_scanner auth_check dbt_probe; with auth_mode ldap|jwt: grafana_gizmosql python_adbc pyarrow_flight jdbc_meta odbc_apache duckdb_adbc_scanner metabase superset auth_check)"
         default: "python_adbc"
       probe:
         description: "grafana/odbc/metabase/superset: run probes instead of TPC-H (any non-empty value)"
@@ -227,6 +227,10 @@ jobs:
               auth_check)
                 pip install -q adbc-driver-flightsql pyarrow
                 python e2e/clients/auth_check.py "$WORK/out/auth_check-$AUTH_MODE.txt" || rc=1
+                continue ;;
+              dbt_probe)
+                pip install -q dbt-gizmosql
+                e2e/clients/dbt_probe.sh flight1:32010 "$FLIGHT_TOKEN" | tee "$WORK/out/dbt_probe.txt"
                 continue ;;
               duckdb_adbc_scanner)
                 pip install -q adbc-driver-flightsql pyarrow "duckdb<2"
