@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       clients:
-        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 java_flight java_flight_zstd java_flight_lz4 python_pandas python_polars python_duckdb python_sqlalchemy grafana grafana_gizmosql odbc metabase superset jdbc_meta duckdb_adbc_scanner auth_check; with auth_mode ldap|jwt: grafana_gizmosql python_adbc pyarrow_flight jdbc_meta odbc_apache duckdb_adbc_scanner metabase superset auth_check)"
+        description: "space-separated clients to run (python_adbc python_adbc_zstd python_adbc_lz4 pyarrow_flight pyarrow_flight_zstd pyarrow_flight_lz4 java_flight java_flight_zstd java_flight_lz4 go_adbc go_adbc_zstd go_adbc_lz4 python_pandas python_polars python_duckdb python_sqlalchemy grafana grafana_gizmosql odbc metabase superset jdbc_meta duckdb_adbc_scanner auth_check; with auth_mode ldap|jwt: grafana_gizmosql python_adbc pyarrow_flight jdbc_meta odbc_apache duckdb_adbc_scanner metabase superset auth_check)"
         default: "python_adbc"
       probe:
         description: "grafana/odbc/metabase/superset: run probes instead of TPC-H (any non-empty value)"
@@ -82,6 +82,11 @@ jobs:
                 case "$c" in *_zstd) export FLIGHT_COMPRESSION=zstd;; *_lz4) export FLIGHT_COMPRESSION=lz4;; *) unset FLIGHT_COMPRESSION;; esac
                 java --add-opens=java.base/java.nio=ALL-UNNAMED -cp "$WORK/jf/lib/*" e2e/java-flight/JavaFlight.java \
                   e2e/queries "$WORK/out/$c" flight1:32010
+                unset FLIGHT_COMPRESSION ;;
+              go_adbc|go_adbc_zstd|go_adbc_lz4)
+                case "$c" in *_zstd) export FLIGHT_COMPRESSION=zstd;; *_lz4) export FLIGHT_COMPRESSION=lz4;; *) unset FLIGHT_COMPRESSION;; esac
+                (cd e2e/go-adbc && go build -o "$WORK/goadbc" .)
+                "$WORK/goadbc" e2e/queries "$WORK/out/$c" flight1:32010
                 unset FLIGHT_COMPRESSION ;;
               python_pandas|python_polars|python_duckdb)
                 pip install -q adbc-driver-flightsql pyarrow pandas polars duckdb
