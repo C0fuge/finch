@@ -96,6 +96,8 @@ CI uses server build **a9e43ca5e296** (DuckDB 1.5.6; LDAP/JWT login, Hive ORC/te
 
 - Superset dialect (B2) needs server changes to run unpatched: ADBC `vendor_version` should start with `duckdb ` (currently `0.0.1`), and transaction statements (ROLLBACK/BEGIN/COMMIT) should be accepted as no-ops. Maintainer: worth doing in the server repo?
 
+- C4 dbt (session 55): adapter `dbt-gizmosql` cannot connect unpatched (catalog session option rejected, vendor_version). Server-side fix would be: accept `adbc.connection.catalog`/schema options as no-ops and report `duckdb <ver>`; but dbt materializations need DDL, which a read-only server lacks. Maintainer: worth enabling these two for dbt `show`/ad-hoc use?
+
 ## Log
 
 - 2026-10-23 (maintainer's local session): repo created; reference data and backlog added; assets uploaded.
@@ -177,3 +179,4 @@ CI uses server build **a9e43ca5e296** (DuckDB 1.5.6; LDAP/JWT login, Hive ORC/te
 - 2026-10-29 (session 52): C2 .NET DONE: `Apache.Arrow.Flight.Sql` 23.0.0 client (`e2e/dotnet-flight`, client `dotnet_flight`), TPC-H 22/22 identical - run 40822274279 (first run 40822049140 failed only on a Grpc.Net.Client version clash). docs/CLIENTS.md. Next: C2 Node.js (check whether a maintained Flight SQL client exists, else a "not usable" row), then C3; JWT waits for the server fix. (Note: a push to main also triggers a default `python_adbc` run.)
 - 2026-10-29 (session 53): C2 Node.js DONE: `@firetiger-oss/flight-sql-client` 1.1.1 (`e2e/node-flight`, client `node_flight`), TPC-H 22/22 identical - run 40830201659 (earlier runs 40829485713, 40829919082 failed on wrong API name / the client's handshake hang, see docs/CLIENTS.md caveats). C2 complete. Next: C3 (Polars/pandas ADBC are already 22/22; add Ibis and a Jupyter nbconvert smoke), then C4-C6; JWT waits for the server fix.
 - 2026-10-29 (session 54): C3 DONE: Jupyter nbconvert smoke (`e2e/clients/jupyter_smoke.py`, client `jupyter_smoke`, pandas over ADBC in an executed notebook), TPC-H 22/22 identical - run 40834223098; Ibis has no Flight SQL backend -> "not usable" row in docs/CLIENTS.md; Polars/pandas were already 22/22. Next: C4 (dbt: adapter over Flight SQL or a "not usable" row), then C5, C6; JWT waits for the server fix.
+- 2026-10-29 (session 55): C4 DONE as a "not usable" row: `dbt-gizmosql` probe (`e2e/clients/dbt_probe.sh`, client `dbt_probe`) fails at connect (`Could not set option(s) 'catalog'`, vendor_version) and materialization needs DDL - run 40846232471, docs/CLIENTS.md. Next: C5 (Tableau / Power BI setup docs: JDBC driver + official ODBC driver, TDC template), then C6 (waits for P5); JWT waits for the server fix.
