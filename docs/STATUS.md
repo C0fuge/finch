@@ -75,7 +75,7 @@ CI uses server build **a9e43ca5e296** (DuckDB 1.5.6; LDAP/JWT login, Hive ORC/te
    22/22 and timing, record in the Log.
 
 > **C1 status (2026-10-28, session 42):** LDAP proven for ADBC Python (login 22/22 + refusals, `docs/AUTH.md`, TLS throwaway cert).
-> Session 43: pyarrow.flight and JDBC LDAP rows DONE. Session 46: Metabase LDAP row DONE. Session 44: ODBC (Apache) LDAP row DONE. Session 45: DuckDB adbc_scanner LDAP row DONE. Session 47: Superset LDAP row DONE. Session 48: Grafana LDAP row DONE. Remaining C1: JWT (blocked by server bug, Open questions); then C2-C6.
+> Session 43: pyarrow.flight and JDBC LDAP rows DONE. Session 46: Metabase LDAP row DONE. Session 44: ODBC (Apache) LDAP row DONE. Session 45: DuckDB adbc_scanner LDAP row DONE. Session 47: Superset LDAP row DONE. Session 48: Grafana LDAP row DONE. Remaining C1: JWT (blocked by server bug, Open questions); then C2-C6 (C2: Go done 2026-10-29; R, Rust, .NET, Node open).
 
 
 - C1 JWT: server bug - `FLIGHT_JWT_AUDIENCE` set -> NPE at start in `JwtVerifier` (immutable `Set.of(audience)`, nimbus calls `contains(null)`); unset -> refused (required). Server repo fix: use a `HashSet` for the audiences. Maintainer: please forward. (TLS question resolved: CI uses a throwaway cert; `FLIGHT_ALLOW_INSECURE` not used.)
@@ -171,3 +171,4 @@ CI uses server build **a9e43ca5e296** (DuckDB 1.5.6; LDAP/JWT login, Hive ORC/te
 - 2026-10-28 (session 46): C1 Metabase LDAP row DONE (TLS + custom CA, wrong password refused, sync, TPC-H 22/22, MBQL + field filter OK; run 40780371612, docs/AUTH.md). Next: Superset LDAP, then Grafana LDAP.
 - 2026-10-28 (session 47): C1 Superset LDAP row DONE (TLS via `SSL_CERT_FILE` in the container, wrong password refused at test_connection, SQL Lab TPC-H 22/22, chart OK; run 40785650464, docs/AUTH.md). Next: Grafana LDAP, then C2.
 - 2026-10-29 (session 48): C1 Grafana LDAP row DONE (fork plugin, `useTLS`+username/password, cert via `SSL_CERT_FILE`; wrong password refused at health check, TPC-H 22/22; run 40799333116; first run 40798990641 only failed on a duplicate datasource name). docs/AUTH.md. Next: C2 (R, Go, Rust, .NET, Node clients); JWT waits for the server fix.
+- 2026-10-29 (session 49): C2 Go DONE: native ADBC Go driver (`e2e/go-adbc`, adbc 1.8.0 - the flightsql driver package is gone from `go/adbc` 1.13), clients `go_adbc`, `go_adbc_zstd`, `go_adbc_lz4`, TPC-H 22/22 identical each - run 40806851384; docs/CLIENTS.md. Next: C2 rest (R, Rust, .NET, Node), one per session; JWT waits for the server fix.
