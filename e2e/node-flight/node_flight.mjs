@@ -36,7 +36,9 @@ function cell(v, field) {
 }
 
 const client = new FlightSQLClient({ host, port: Number(port), plaintext: true, ...(token ? { token } : {}) });
-await client.connect();
+// connect() creates the channel, then awaits a handshake 'data' event that this server (like most) never sends
+// (the bearer header is checked per call), so awaiting it hangs: start it, do not wait for it.
+client.connect().catch(() => {});
 for (const f of fs.readdirSync(qdir).filter((x) => x.endsWith(".sql")).sort()) {
   const name = f.slice(0, -4);
   let sql = fs.readFileSync(path.join(qdir, f), "utf8");
