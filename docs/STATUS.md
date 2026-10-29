@@ -19,6 +19,13 @@
 
 ## Next steps (one per session; small and finished)
 
+> **Final server build `server-1.0.0-1e7b43a4e0c7` is in the assets** (2026-10-29, local coordinator, finish mode; jar,
+> plugins tar, libs tar, `flight-auth-...tar.zst` (LDAP/JWT providers), lz4 codec jar + merged `SHA256SUMS`). Contains every
+> item since 7562a5bdb7b9; the server release's START-NOTES "Settings since 7562a5bdb7b9" lists each new setting with its
+> default (opt-in client compression ZSTD/LZ4, opt-in shared DuckDB with a thread cap, Ranger masks and row filters, Hive
+> ORC/text/Avro/views, Iceberg REST catalogs, jdbc plugin for PostgreSQL/MySQL, `shutdownDrainSeconds` 20 s, ...). This
+> repo's routine is paused; when it resumes, make this build the default if the suite is green.
+
 > **Maintainer, 2026-10-29 13:15 - FINISH MODE:** finish C4 (dbt check) and C5 (Tableau / Power BI docs), keep C6 (ClickHouse row) only if the server build in the assets already has plain-Flight commands; then write "FINCH DONE" and stop. No new items.
 
 > **Maintainer, 2026-10-28 15:00 - native first.** For every tool, prefer and test its native Arrow Flight / ADBC path
