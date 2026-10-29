@@ -19,6 +19,8 @@
 
 ## Next steps (one per session; small and finished)
 
+> **Maintainer, 2026-10-29 13:15 - FINISH MODE:** finish C4 (dbt check) and C5 (Tableau / Power BI docs), keep C6 (ClickHouse row) only if the server build in the assets already has plain-Flight commands; then write "FINCH DONE" and stop. No new items.
+
 > **Maintainer, 2026-10-28 15:00 - native first.** For every tool, prefer and test its native Arrow Flight / ADBC path
 > over JDBC/ODBC; where a tool has both, add a speed row (same query set: TPC-H SF1 total and a 1M-row export) native vs
 > JDBC so the gain is visible. Mark JDBC-only tools as such in the README matrix.
